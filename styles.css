@@ -1,0 +1,259 @@
+:not(:defined) > * {
+  display: none;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+model-viewer {
+  width: 100%;
+  height: 100%;
+  background-color: #58585879;
+}
+
+.Hotspot {
+  background: #9a9a9aaf;
+  border-radius: 32px;
+  border: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  cursor: pointer;
+  height: 24px;
+  padding: 8px;
+  position: relative;
+  transition: opacity 0.3s;
+  width: 24px;
+}
+
+.Hotspot:not([data-visible]) {
+  background: transparent;
+  border: 4px solid #fff;
+  box-shadow: none;
+  height: 32px;
+  pointer-events: none;
+  width: 32px;
+}
+
+.Hotspot:focus {
+  border: 4px solid rgba(161, 161, 163, 0.823);
+  height: 32px;
+  outline: none;
+  width: 32px;
+}
+
+.Hotspot > * {
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
+.HotspotAnnotation{
+  background: #2e2d2dec;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  color: rgba(231, 231, 231, 0.822);
+  display: block;
+  font-family: Futura, Helvetica Neue, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  left: calc(100% + 1em);
+  max-width: 128px;
+  overflow-wrap: break-word;
+  padding: 0.5em 1em;
+  position: absolute;
+  top: 50%;
+  width: max-content;
+}
+
+.Hotspot:not([data-visible]) > * {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(calc(-50% + 4px));
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+
+.progress-bar {
+  display: block;
+  width: 33%;
+  height: 10%;
+  max-height: 2%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate3d(-50%, -50%, 0);
+  border-radius: 25px;
+  box-shadow: 0px 3px 10px 3px rgba(0, 0, 0, 0.5), 0px 0px 5px 1px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.progress-bar.hide {
+  visibility: hidden;
+  transition: visibility 0.3s;
+}
+
+.update-bar {
+  background-color: rgba(12, 12, 12, 0.925);
+  width: 0%;
+  height: 100%;
+  border-radius: 25px;
+  float: left;
+  transition: width 0.3s;
+}
+
+#ar-button:active {
+  background-color: #E8EAED;
+}
+
+#ar-button:focus {
+  outline: none;
+}
+
+#ar-button:focus-visible {
+  outline: 1px solid #4285f4;
+}
+
+@keyframes circle {
+  from { transform: translateX(-50%) rotate(0deg) translateX(50px) rotate(0deg); }
+  to   { transform: translateX(-50%) rotate(360deg) translateX(50px) rotate(-360deg); }
+}
+
+@keyframes elongate {
+  from { transform: translateX(100px); }
+  to   { transform: translateX(-100px); }
+}
+
+
+ #image-container {
+  position: relative;
+  display: inline-block; /* Ou 'block', dependendo do seu layout */
+}
+
+#image-container img {
+  display: block; /* Remove o espaço abaixo da imagem */
+  width: 100%; /* Ajuste conforme necessário */
+  height: auto; /* Mantém a proporção da imagem */
+}
+
+#image-name {
+  position: absolute;
+  bottom: 10px; /* Distância do nome da borda inferior da imagem */
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #FFF; /* Cor do texto */
+  background-color: rgba(0, 0, 0, 0.5); /* Fundo semitransparente */
+  padding: 5px 0; /* Espaçamento interno */
+  opacity: 0;
+  transition: opacity 0.3s; /* Efeito de transição suave */
+  pointer-events: none; /* Evita que o texto interfira no evento de hover */
+}
+
+#image-container:hover .image-name {
+  opacity: 1;
+}
+
+#modelo3D {
+  width: 100%;
+  height: 100%;
+}
+
+.img.w-16 aspect-square {
+  transition: box-shadow 0.5s ease-in-out, border 0.5s ease-in-out;
+  border: 2px solid transparent;
+}
+
+.img.w-16 aspect-square:hover {
+  box-shadow: 0 0 0 2px #fff;
+  border: 2px solid #fff;
+}
+
+/* Estilo inicial da bola */
+.variante .bola {
+  width: 43px; /* Largura inicial */
+  height: 43px; /* Altura inicial */
+  border-radius: 50%; /* Faz com que seja uma bola */
+  transition: width 0.3s ease, height 0.3s ease, background-color 0.3s ease; /* Suaviza a transição */
+  background-color: #555; /* Cor inicial */
+}
+
+/* Estilo quando o elemento varianteBlue está selecionado */
+.variante#varianteBlue.selecionado .bola {
+  width: 24px; /* Largura quando selecionado */
+  height: 24px; /* Altura quando selecionado */
+  background-color: #007bff; /* Cor quando selecionado */
+}
+
+/* Estilo para hover sobre a bola dentro de varianteBlue */
+.variante#varianteBlue:hover .bola {
+  background-color: #009bff; /* Cor de hover */
+}
+/* Estilo para o botão no estado original */
+.botao-rotacao {
+  background-image: url('url-da-imagem-original-aqui');
+  /* Outras propriedades como tamanho, borda, etc. */
+  width: 50px; /* Exemplo */
+  height: 50px; /* Exemplo */
+  cursor: pointer;
+}
+
+/* Estilo para o botão quando a rotação está ativada */
+.botao-rotacao-ativo {
+  background-image: url('url-da-imagem-hover-aqui');
+  /* Outras propriedades podem ser iguais ou diferentes */
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 10px 0;
+
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip:hover.tooltiptext {
+  visibility: visible;
+}
+
+.custom-btn {
+ 
+  cursor: pointer;
+  transition: all 0.3s ease;
+   box-shadow:inset 2px 2px 2px 0px rgba(255,255,255,.5),
+   7px 7px 20px 0px rgba(0,0,0,.1),
+   4px 4px 5px 0px rgba(0,0,0,.1);
+  outline: none;
+}
+ .btn-2:before {
+    height: 0%;
+    width: 2px;
+  }
+  .btn-2:hover {
+    box-shadow:  4px 4px 6px 0 rgba(255,255,255,.5),
+                -4px -4px 6px 0 rgba(116, 125, 136, .5), 
+      inset -4px -4px 6px 0 rgba(255,255,255,.2),
+      inset 4px 4px 6px 0 rgba(0, 0, 0, .4);
+  }
+             
+
+
+
