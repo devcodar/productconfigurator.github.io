@@ -27,7 +27,7 @@
   </head>
   <body style="display: center;">
     <!-- <model-viewer> HTML element -->
-    <model-viewer id="modelo2D" src="RAPTOR.glb" scale="0.1 0.1 0.1" ar ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="5" environment-image="rosendal_plains_2_2k.hdr" exposure="0.5" shadow-softness="0"  tone-mapping="agx" skybox-image="rosendal_plains_2_2k.hdr" skybox-height="1.5m" max-camera-orbit="auto 90deg auto">
+    <model-viewer id="modelo2D" src="RAPTOR.glb" scale="0.2 0.2 0.2" ar ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="5" environment-image="rosendal_plains_2_2k.hdr" exposure="0.8" shadow-softness="0"  tone-mapping="agx" skybox-image="rosendal_plains_2_2k.hdr" skybox-height="1.5m" max-camera-orbit="auto 90deg auto">
   <div id="conteudo" style="
    margin-left: 40px;margin-top: 35px;" class="flex gap-4 ml-0 text-black max-md:flex-wrap">
     <img
@@ -109,7 +109,7 @@
 </div>
 <effect-composer id="customComposer" render-mode="quality">
   <smaa-effect quality="high"></smaa-effect>
-  <color-grade-effect brightness="0.2" contrast="0.2" saturation="0.2" smoothing="0.2" tonemapping="reinhard2_adaptive"></color-grade-effect>
+  <color-grade-effect brightness="0.2" contrast="0.2" saturation="0.2" smoothing="0.3" tonemapping="reinhard2_adaptive"></color-grade-effect>
 </effect-composer>
     </model-viewer>  
     <script src="rotacao.js"></script>

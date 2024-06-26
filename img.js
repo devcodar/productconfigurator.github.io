@@ -4,7 +4,7 @@ document.getElementById('ativarSkybox').addEventListener('click', function() {
   
     // Ativa o skybox HDR
     modelo3D.setAttribute('skybox-image', caminhoImagemHDR);
-    modelo3D.setAttribute('scale', '0.1 0.1 0.1 0.1');
+    modelo3D.setAttribute('scale', '0.2 0.2 0.2 ');
 
     // Opcional: Ative a sombra e a iluminação do modelo baseada no ambiente HDR
     modelo3D.setAttribute('shadow-intensity', '1');
