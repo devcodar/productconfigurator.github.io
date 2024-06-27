@@ -1,6 +1,6 @@
 document.getElementById('ativarSkybox').addEventListener('click', function() {
     const modelo3D = document.getElementById('modelo2D');
-    const caminhoImagemHDR = 'satara_night_2k.hdr';
+    const caminhoImagemHDR = 'kloppenheim_02_4k.hdr';
   
     // Ativa o skybox HDR
     modelo3D.setAttribute('skybox-image', caminhoImagemHDR);
