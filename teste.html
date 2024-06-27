@@ -37,6 +37,13 @@
       .footer-buttons > div {
         flex: 0 0 auto;
       }
+      .footer-buttons span {
+        display: none;
+      }
+      .footer-buttons img, .footer-buttons div {
+        width: 3rem;
+        height: 3rem;
+      }
     }
   </style>
 </head>
@@ -44,7 +51,7 @@
   <model-viewer id="modelo2D" src="RAPTOR.glb" scale="1.0 1.0 1.0" ar ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="5" environment-image="kloppenheim_02_4k.hdr" exposure="1.0" shadow-softness="0" tone-mapping="agx" skybox-image="rosendal_plains_2_2k.hdr" skybox-height="1.5m" max-camera-orbit="auto 90deg auto">
   </model-viewer>
   <footer id="conteudo" class="overlay-scroll">
-    <div class="footer-buttons flex flex-col justify-center p-4 bg-white rounded-xl shadow-md fixed inset-x-0 bottom-0 mx-auto w-full h-auto transition-all duration-300 ease-in-out hover:shadow-lg">
+    <div class="footer-buttons flex flex-col justify-center p-4 bg-white shadow-md fixed inset-x-0 bottom-0 mx-auto w-full h-auto transition-all duration-300 ease-in-out hover:shadow-lg">
       <div class="flex gap-4 flex-nowrap justify-center">
         <div id="botaoRotacao" class="flex flex-col items-center cursor-pointer">
           <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/80c2b38cc143c5cbc7d2569c6cb98b41c3ba8f1164e9c239e8eeec620f658405?apiKey=c135008d38164259a21934cb5ef98321&" class="shrink-0 aspect-square w-12 h-12">
@@ -76,7 +83,7 @@
         </div>
         <div id="btnOpenBackDoor" class="flex flex-col items-center cursor-pointer">
           <img src="carro.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Back Door</span>
+          <span class="text-sm">Hood</span>
         </div>
       </div>
     </div>
@@ -85,22 +92,49 @@
     <smaa-effect quality="high" blend-mode="DEFAULT" opacity="1"></smaa-effect>
     <color-grade-effect brightness="0.2" contrast="0.2" saturation="0.2" smoothing="0.3" tonemapping="reinhard2_adaptive" blend-mode="DEFAULT" opacity="1" hue="0"></color-grade-effect>
   </effect-composer>
+  <script src="rotacao.js"></script>
+  <script src="script.js"></script>
+  <script src="img.js"></script>
+  <script src="/modelo_moto/telacar.js"></script>
+  <script src="carvariantes.js"></script>
+  <script src="hostpost.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const varianteBlue = document.getElementById('varianteBlue');
       varianteBlue.addEventListener('click', function() {
         this.classList.toggle('selecionado');
       });
+
+      const botaoRotacao = document.getElementById('botaoRotacao');
+      botaoRotacao.addEventListener('click', function() {
+        this.classList.toggle('ativo');
+      });
+
+      const ativarSkybox = document.getElementById('ativarSkybox');
+      ativarSkybox.addEventListener('click', function() {
+        const modelViewer = document.getElementById('modelo2D');
+        if (this.classList.contains('day')) {
+          modelViewer.environmentImage = 'kloppenheim_02_4k.hdr.hdr';
+          this.classList.remove('day');
+          this.classList.add('night');
+        } else {
+          modelViewer.environmentImage = 'rainforest_trail_4k.hdr';
+          this.classList.remove('night');
+          this.classList.add('day');
+        }
+      });
     });
   </script>
   <script>
     const variantes = {
       varianteDefault: 'Default',
-      varianteOrange: 'ORANGE',
-      varianteRed: 'RED',
-      varianteBlue: 'BLUE',
+      varianteOrange: 'BLUE',
+      varianteRed: 'ORANGE',
+      varianteBlue: 'RED',
     };
+
     const modelViewerVariants = document.querySelector("model-viewer#modelo2D");
+
     Object.keys(variantes).forEach(id => {
       document.getElementById(id).addEventListener('click', function() {
         const varianteNome = variantes[id];
@@ -147,5 +181,21 @@
       }
     });
   </script>
+  <style>
+    .ativo {
+      animation: rotate-animation 0.5s ease-in-out;
+      transform: rotate(360deg);
+    }
+    @keyframes rotate-animation {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .day img {
+      filter: brightness(100%);
+    }
+    .night img {
+      filter: brightness(50%);
+    }
+  </style>
 </body>
 </html>
