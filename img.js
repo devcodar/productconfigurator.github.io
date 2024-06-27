@@ -12,8 +12,6 @@ document.getElementById('ativarSkybox').addEventListener('click', function() {
     modelo3D.setAttribute('skybox-image', caminhoImagemHDRSecundario);
     modelo3D.setAttribute('environment-image', caminhoImagemHDRSecundario);
   }
-
-  modelo3D.setAttribute('scale', '2.5 2.5 2.5'); 
   modelo3D.setAttribute('shadow-intensity', '5');
 });
   
