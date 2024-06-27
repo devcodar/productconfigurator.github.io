@@ -91,6 +91,10 @@
           <img src="carro.png" class="shrink-0 aspect-square w-12 h-12">
           <span class="text-sm">Hood</span>
         </div>
+        <div id="btnOpenHood" class="flex flex-col items-center cursor-pointer">
+          <img src="car-door-vector.jpg" class="shrink-0 aspect-square w-12 h-12">
+          <span class="text-sm">Trunk</span>
+        </div>
       </div>
     </div>
   </footer>
@@ -215,6 +219,8 @@
   const modelViewer = document.getElementById('modelo2D');
   const btnOpenFrontDoor = document.getElementById('btnOpenFrontDoor');
   const btnOpenBackDoor = document.getElementById('btnOpenBackDoor');
+  const btnOpenHood = document.getElementById('btnOpenHood');
+  let hoodOpen = false;
   let frontDoorOpen = false;
   let backDoorOpen = false;
 
@@ -247,6 +253,22 @@
       modelViewer.play();
       setTimeout(() => modelViewer.pause(), 1000); // Ajuste o tempo conforme necessário
       btnOpenBackDoor.querySelector('img').src = 'carro.png'; // Troque o ícone
+    }
+  });
+
+  btnOpenHood.addEventListener('click', () => {
+    hoodOpen = !hoodOpen;
+    if (hoodOpen) {
+      modelViewer.animationName = 'Object_91Action.001';
+      modelViewer.play();
+      setTimeout(() => modelViewer.pause(), 1000); // Ajuste o tempo conforme necessário
+      btnOpenBackDoor.querySelector('img').src = 'car-door-vector.png'; // Troque o ícone
+    } else {
+      modelViewer.currentTime = 0;
+      modelViewer.animationName = 'Object_91Action.001';
+      modelViewer.play();
+      setTimeout(() => modelViewer.pause(), 1000); // Ajuste o tempo conforme necessário
+      btnOpenHood.querySelector('img').src = 'car-door-vector.png'; // Troque o ícone
     }
   });
 </script>
