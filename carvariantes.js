@@ -1,8 +1,8 @@
 const variantes = {
     varianteDefault: 'Default',
-    varianteOrange: 'BLUE',
-    varianteRed: 'ORANGE',
-    varianteBlue:'RED',
+    varianteOrange: 'ORANGE',
+    varianteRed: 'RED',
+    varianteBlue:'BLUE',
     // Adicione mais variantes conforme necessário
 };
 
