@@ -91,6 +91,71 @@
       border-radius: 9999px;
       cursor: pointer;
     }
+
+    #varianteBlue div {
+    /* Adiciona um gradiente para dar uma aparência de profundidade */
+    background: linear-gradient(145deg, #1e3a8a, #3b82f6);
+    /* Adiciona um brilho sutil para o efeito 3D */
+    box-shadow: 4px 4px 8px #1e40af, -4px -4px 8px #3b82f6;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  #varianteBlue div:hover {
+    /* Amplia o efeito 3D ao passar o mouse */
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 12px #1e40af, -6px -6px 12px #3b82f6;
+  }
+
+  #varianteBlue span {
+    margin-top: 8px;
+    color: #3b82f6;
+  }
+  #varianteRed div {
+  background: linear-gradient(145deg, #8b0000, #ff6347);
+  box-shadow: 4px 4px 8px #b22222, -4px -4px 8px #ff6347;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#varianteRed div:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 12px #b22222, -6px -6px 12px #ff6347;
+}
+
+#varianteRed span {
+  margin-top: 8px;
+  color: #ff6347;
+}
+#varianteOrange div {
+  background: linear-gradient(145deg, #ff5100, #ff4800);
+  box-shadow: 4px 4px 8px #ff4500, -4px -4px 8px #ff5e00;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#varianteOrange div:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 12px #ff5e00, -6px -6px 12px #ff6600;
+}
+
+#varianteOrange span {
+  margin-top: 8px;
+  color: #ff7300;
+}
+
+#varianteDefault div {
+  background: linear-gradient(145deg, #b8860b, #7c6b07);
+  box-shadow: 4px 4px 8px #8f6e03, -4px -4px 8px #af9502;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#varianteDefault div:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 12px #9e7a04, -6px -6px 12px #685902;
+}
+
+#varianteDefault span {
+  margin-top: 8px;
+  color: #ffd700;
+}
   </style>
 </head>
 <body style="display: center; height: 100vh; width: 100%; align-items: center;">
