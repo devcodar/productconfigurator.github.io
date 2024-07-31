@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const modelo3D = document.getElementById('modelo2D');
+    const modelo2D = document.getElementById('modelo2D');
     const abrirAR = document.getElementById('abrirAR');
   
     abrirAR.addEventListener('click', function() {
