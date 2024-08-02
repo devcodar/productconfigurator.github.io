@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>B-01 - Product Configurator</title>
+  <title>B-02 - Product Configurator</title>
   <meta charset="utf-8">
   <meta name="description" content="Product Configurator">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -24,7 +24,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #f0f0f0;
+            background-color: #f0f0f000;
     }
     @media (min-width: 768px) and (max-width: 1024px) {
       /* Estilos específicos para modo tablet */
@@ -157,7 +157,7 @@
   </style>
 </head>
 <body style="display: center; height: 100vh; width: 100%; align-items: center;">
-  <model-viewer id="modelo2D" src="https://cdn.glitch.me/88583706-76ed-4008-a431-8595a0893921/Dani_Moto_2.glb?v=1722556374940" ar ar-scale="auto" ar-placement="floor" ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="5" environment-image="WhiteStudio.hdr" exposure="1" shadow-softness="1" tone-mapping="neutral" skybox-image="WhiteStudio.hdr" skybox-height="2rem" max-camera-orbit="auto 90deg auto" scale="1 1 1" ios-src="https://cdn.glitch.me/88583706-76ed-4008-a431-8595a0893921/Moto.usdz?v=1722556427508" xr-environment>
+  <model-viewer id="modelo2D" src="https://cdn.glitch.me/88583706-76ed-4008-a431-8595a0893921/Dani_Moto_2.glb" ar ar-placement="floor" ar-scale="fixed" ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="5" environment-image="spruit_sunrise_4k.hdr" exposure="1" shadow-softness="1" tone-mapping="neutral" skybox-image="spruit_sunrise_4k.hdr" skybox-height="2rem" max-camera-orbit="auto 90deg auto" scale="1 1 1" ios-src="https://cdn.glitch.me/88583706-76ed-4008-a431-8595a0893921/Moto.usdz" xr-environment>
   </model-viewer>
 
   <div id="menuToggle" class="menu-toggle">
@@ -199,7 +199,7 @@
   <effect-composer id="customComposer" render-mode="performance">
     <smaa-effect quality="high" blend-mode="DEFAULT" opacity="1"></smaa-effect>
     <color-grade-effect brightness="0.0" contrast="0.2" saturation="0.2" smoothing="0.3" tonemapping="optimized_cineon" blend-mode="DEFAULT" opacity="1" hue="0.0, 2 * PI"></color-grade-effect>
-    <selective-bloom-effect strength="0.0" radius="0.8" threshold="1.0" smoothing="0.025"></selective-bloom-effect>
+    <selective-bloom-effect strength="1.0" radius="0.8" threshold="1.0" smoothing="0.025"></selective-bloom-effect>
     <ssao-effect></ssao-effect>
   </effect-composer>
 
@@ -212,8 +212,8 @@
       const offCanvasMenu = document.querySelector('.off-canvas-menu');
 
       ativarSkybox.addEventListener('click', function() {
-        const caminhoImagemHDRPrincipal = 'rosendal_plains_2_2k.hdr';
-        const caminhoImagemHDRSecundario = 'kloppenheim_02_4k.hdr';
+        const caminhoImagemHDRPrincipal = 'WhiteStudio.hdr';
+        const caminhoImagemHDRSecundario = 'spruit_sunrise_4k.hdr';
         const skyboxAtivo = modelo2D.getAttribute('skybox-image');
 
         if (skyboxAtivo === caminhoImagemHDRSecundario) {
@@ -275,7 +275,7 @@
       varianteDefault: 'Default',
       varianteOrange: 'ORANGE',
       varianteRed: 'RED',
-      varianteBlue: 'BLUE',
+      varianteBlue: 'RED',
     };
 
     const modelViewerVariants = document.querySelector("model-viewer#modelo2D");
