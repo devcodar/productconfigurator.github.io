@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>B-01 - Product Configurator</title>
+  <title>Product Configurator</title>
   <meta charset="utf-8">
   <meta name="description" content="Product Configurator">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,196 +17,120 @@
   <script type="module" src="https://cdn.jsdelivr.net/npm/@khronos/gltf-transform@0.14.2/lib/index.js"></script>
   <link type="text/css" href="./styles.css" rel="stylesheet">
   <style>
-    body { font-family: 'Goldman', cursive;
-            height: 100vh;
-            width: 100%;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f0f0f000;
-    }
-    @media (min-width: 768px) and (max-width: 1024px) {
-      /* Estilos específicos para modo tablet */
-      .flex-wrap {
-        justify-content: center;
-      }
-    }
-    @media (max-width: 767px) {
-      /* Estilos específicos para modo mobile */
-      .overlay-scroll {
-        overflow-x: auto;
-        white-space: nowrap;
-        justify-content: center;
-      }
-      .overlay-scroll div {
-        display: inline-block;
-        vertical-align: top;
-      }
-      .footer-buttons {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-around;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        padding: 1rem;
-      }
-      .footer-buttons > div {
-        flex: 0 0 auto;
-        background-color: #0000;
-      }
-      .footer-buttons span {
-        display: none;
-      }
-      .footer-buttons img, .footer-buttons div {
-        width: 2.75rem;
-        height: 2.75rem;
-      }
-    }
-
-    /* Estilos para o menu off-canvas */
-    .off-canvas-menu {
-      position: fixed;
-      bottom: 0;
-      left: 0;
+    body { 
+      font-family: 'Goldman', cursive;
+      height: 100vh;
       width: 100%;
-      background-color: rgba(14, 13, 13, 0);
-      transform: translateY(100%);
-      transition: transform 0.3s ease-in-out;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f0f0;
     }
 
-    .off-canvas-menu.open {
-      transform: translateY(0);
-      bottom: 4rem;
-    }
-
-    .menu-toggle {
+    /* Estilos para o menu flutuante */
+    .floating-menu {
       position: fixed;
       bottom: 1rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #0000007a;
-      color: #bdbdbd;
-      padding: 0.5rem 1rem;
-      border-radius: 9999px;
+      right: 4rem;
+      background-color: #141414b9;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+    }
+
+    .floating-menu img {
+      width: 48px;
+      height: 48px;
+      margin: 0 0.5rem;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .floating-menu img:hover {
+      transform: scale(1.1);
+    }
+
+    .submenu {
+      position: absolute;
+      bottom: 7rem;
+      right: 4.5rem;
+      background-color: #555555;
+      padding: 0.5rem;
+      border-radius: 8px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .submenu img {
+      width: 48px;
+      height: 48px;
+      margin: 0 0.3rem;
       cursor: pointer;
     }
 
-    #varianteBlue div {
-  background: linear-gradient(145deg, #1e3a8a, #3b82f6, #89c9ff);
-  box-shadow: 4px 4px 8px #1e40af, -4px -4px 8px #3b82f6;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
+    .submenu.active {
+      display: flex;
+    }
 
-#varianteBlue div:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 12px #1e40af, -6px -6px 12px #3b82f6;
-}
+    @media (max-width: 767px) {
+      /* Menu flutuante responsivo */
+      .floating-menu {
+        bottom: 1rem;
+        right: 50%;
+        transform: translateX(50%);
+        padding: 0.5rem;
+      }
 
-#varianteBlue span {
-  margin-top: 8px;
-  color: #3b83f600;
-}
-#varianteRed div {
-  background: linear-gradient(145deg, #8b0000, #ff6347, #ff9f9f);
-  box-shadow: 4px 4px 8px #b22222, -4px -4px 8px #ff6347;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
+      .floating-menu img {
+        width: 43px;
+        height: 43px;
+        margin: 0.6rem 0;
+      }
 
-#varianteRed div:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 12px #b22222, -6px -6px 12px #ff6347;
-}
-
-#varianteRed span {
-  margin-top: 8px;
-  color: #ff634700;
-}
-
-#varianteOrange div {
-  background: linear-gradient(145deg, #ec3c10f1, #ff3c00, #ffd27f);
-  box-shadow: 4px 4px 8px #ff4500, -4px -4px 8px #ff5100;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-#varianteOrange div:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 12px #ff4400cb, -6px -6px 12px #ff5100ea;
-}
-
-#varianteOrange span {
-  margin-top: 8px;
-  color: #ff480000;
-}
-
-#varianteDefault div {
-  background: linear-gradient(145deg, #af8211, #7c5e0c, #c98d0d);
-  box-shadow: 4px 4px 8px #b38b09, -4px -4px 8px #7e6b03;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-#varianteDefault div:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 12px #8a6b05, -6px -6px 12px #bda208;
-}
-
-#varianteDefault span {
-  margin-top: 8px;
-  color: #9b590300;
-}
+      .submenu {
+        bottom: 7rem;
+        right: 50%;
+        transform: translateX(50%);
+      }
+    }
   </style>
 </head>
-<body style="display: center; height: 100vh; width: 100%; align-items: center;">
-  <model-viewer id="modelo2D" src="RAPTOR.glb" ar ar-scale="fixed" ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="5" environment-image="WhiteStudio.hdr" exposure="1" shadow-softness="1" tone-mapping="neutral" skybox-image="WhiteStudio.hdr" skybox-height="2rem" max-camera-orbit="auto 90deg auto" scale="1 1 1">
+<body>
+  <model-viewer id="modelo2D" src="RAPTOR.glb" ar ar-scale="fixed" ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="5" environment-image="WhiteStudio.hdr" exposure="1" shadow-softness="0" tone-mapping="neutral" skybox-image="WhiteStudio.hdr" skybox-height="2rem" max-camera-orbit="auto 90deg auto" scale="1 1 1" ios-src="#" xr-environment>
   </model-viewer>
 
-  <div id="menuToggle" class="menu-toggle">
-    <span>&#x25B2;</span> <!-- Ícone de seta -->
+  <!-- Menu flutuante estilizado -->
+  <div id="floatingMenu" class="floating-menu">
+    <img src="color-icon.png" alt="Colors" id="btnColors">
+    <img src="icon.png" alt="Behavior" id="btnBehavior">
+    <img src="set-icon.png" alt="Set" id="btnSet">
   </div>
 
-  <footer id="conteudo" class="overlay-scroll off-canvas-menu">
-    <div class="footer-buttons flex flex-col justify-center p-4 shadow-md mx-auto w-full h-auto transition-all duration-300 ease-in-out hover:shadow-lg">
-      <div class="flex gap-4 flex-nowrap justify-center">
-        <div id="botaoRotacao" class="flex flex-col items-center cursor-pointer">
-          <img src="ICONES FUNDO BRANCO-04.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Rotate</span>
-        </div>
-        <div id="ativarSkybox" class="flex flex-col items-center cursor-pointer">
-          <img src="ICONES FUNDO BRANCO-06.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
-        <div id="abrirAR" class="flex flex-col items-center cursor-pointer">
-          <img src="ICONES FUNDO BRANCO-05.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">AR</span>
-        </div>
-        <div id="btnOpenFrontDoor" class="flex flex-col items-center cursor-pointer">
-          <img src="ICONES FUNDO BRANCO-01.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Door</span>
-        </div>
-        <div id="btnOpenBackDoor" class="flex flex-col items-center cursor-pointer">
-          <img src="ICONES FUNDO BRANCO-03.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Hood</span>
-        </div>
-        <div id="btnOpenHood" class="flex flex-col items-center cursor-pointer">
-          <img src="ICONES FUNDO BRANCO-02.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Trunk</span>
-        </div>
-        <div id="varianteDefault" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-08.png" class="shrink-0 aspect-square w-12 h-12">
-          </div>
-        <div id="varianteOrange" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-11.png" class="shrink-0 aspect-square w-12 h-12">
-          </div>
-        <div id="varianteRed" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-10.png" class="shrink-0 aspect-square w-12 h-12">
-          </div>
-        <div id="varianteBlue" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-07.png" class="shrink-0 aspect-square w-12 h-12">
-          </div>
-      </div>
-      </div>
-    </div>
-  </footer>
+  <!-- Submenus -->
+  <div id="colorsMenu" class="submenu">
+    <img id="varianteDefault" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-08.png" alt="Blue" data-color="blue">
+    <img id="varianteBlue" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-07.png" alt="Yellow" data-color="yellow">
+    <img id="varianteOrange" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-11.png" alt="Green" data-color="green">
+    <img id="varianteRed" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-10.png" alt="Red" data-color="red">
+  </div>
+
+  <div id="behaviorMenu" class="submenu">
+    <img id="btnOpenFrontDoor" src="icon-door.png" alt="door" data-function="rotate">
+    <img id="btnOpenBackDoor" src="icon-hood.png" alt="Hood" data-function="hood">
+    <img id="btnOpenHood" src="car-trunk-icon.png" alt="Trunk" data-function="trunk">
+    <a href="./teste.html"><img src="interno.png" alt="Trunk"></a>
+  </div>
+
+  <div id="setMenu" class="submenu">
+    <img src="icon-skybox.png" alt="Skybox" data-function="skybox">
+    <img src="icon-ar.png" alt="AR" data-function="ar">
+    <img id="botaoRotacao" src="icon-rotate.png" alt="360" data-function="360">
+  </div>
 
   <effect-composer id="customComposer" render-mode="performance">
     <smaa-effect quality="high" blend-mode="DEFAULT" opacity="1"></smaa-effect>
@@ -214,206 +138,108 @@
     <selective-bloom-effect strength="0.0" radius="0.8" threshold="1.0" smoothing="0.025"></selective-bloom-effect>
     <ssao-effect></ssao-effect>
   </effect-composer>
-
+  <script src="rotacao.js"></script>
+    <script src="script.js"></script>
+    <script src="img.js"></script>
+    <script src="/modelo_moto/telacar.js"></script>
+    <script src="carvariantes.js"></script>
+    <script src="hostpost.js">
+    </script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const modelo2D = document.getElementById('modelo2D');
-      const ativarSkybox = document.getElementById('ativarSkybox');
-      const abrirAR = document.getElementById('abrirAR');
-      const menuToggle = document.getElementById('menuToggle');
-      const offCanvasMenu = document.querySelector('.off-canvas-menu');
+      const btnColors = document.getElementById('btnColors');
+      const btnBehavior = document.getElementById('btnBehavior');
+      const btnSet = document.getElementById('btnSet');
+      const colorsMenu = document.getElementById('colorsMenu');
+      const behaviorMenu = document.getElementById('behaviorMenu');
+      const setMenu = document.getElementById('setMenu');
 
-      ativarSkybox.addEventListener('click', function() {
-        const caminhoImagemHDRPrincipal = 'rosendal_plains_2_2k.hdr';
-        const caminhoImagemHDRSecundario = 'kloppenheim_02_4k.hdr';
-        const skyboxAtivo = modelo2D.getAttribute('skybox-image');
+      btnColors.addEventListener('click', function() {
+        colorsMenu.classList.toggle('active');
+        behaviorMenu.classList.remove('active');
+        setMenu.classList.remove('active');
+      });
 
-        if (skyboxAtivo === caminhoImagemHDRSecundario) {
-          modelo2D.setAttribute('skybox-image', caminhoImagemHDRPrincipal);
-          modelo2D.setAttribute('environment-image', caminhoImagemHDRPrincipal);
-        } else {
-          modelo2D.setAttribute('skybox-image', caminhoImagemHDRSecundario);
-          modelo2D.setAttribute('environment-image', caminhoImagemHDRSecundario);
+      btnBehavior.addEventListener('click', function() {
+        behaviorMenu.classList.toggle('active');
+        colorsMenu.classList.remove('active');
+        setMenu.classList.remove('active');
+      });
+
+      btnSet.addEventListener('click', function() {
+        setMenu.classList.toggle('active');
+        colorsMenu.classList.remove('active');
+        behaviorMenu.classList.remove('active');
+      });
+
+      // Funções para os submenus
+      colorsMenu.addEventListener('click', function(e) {
+        const color = e.target.getAttribute('data-color');
+        if (color) {
+          // Lógica para alterar a cor
+          console.log('Alterando cor para:', color);
+          // Implementar a mudança de cor no modelo aqui
         }
-        modelo2D.setAttribute('skybox-height', '2.45rem');
-        modelo2D.setAttribute('shadow-softness', '1');
-        modelo2D.setAttribute('shadow-intensity','5');
-        modelo2D.setAttribute('exposure','2');
-
-
-        // Manter o CSS do body
-            document.body.style.height = '100vh';
-            document.body.style.width = '100%';
-            document.body.style.alignItems = 'center';
-            document.body.style.justifyContent = 'center';
       });
 
-      abrirAR.addEventListener('click', function() {
-        modelo2D.activateAR();
+      behaviorMenu.addEventListener('click', function(e) {
+        const func = e.target.getAttribute('data-function');
+        if (func === 'rotate') {
+          // Lógica para rotacionar o modelo
+          console.log('Rotacionando modelo');
+        } else if (func === 'hood') {
+          // Lógica para abrir o capô
+          console.log('Abrindo capô');
+        } else if (func === 'trunk') {
+          // Lógica para abrir o porta-malas
+          console.log('Abrindo porta-malas');
+        }
       });
 
-      menuToggle.addEventListener('click', function() {
-        offCanvasMenu.classList.toggle('open');
-        menuToggle.innerHTML = offCanvasMenu.classList.contains('open') ? '&#x25BC;' : '&#x25B2;'; // Alterna entre seta para cima e para baixo
+      setMenu.addEventListener('click', function(e) {
+        const func = e.target.getAttribute('data-function');
+        if (func === 'skybox') {
+          // Lógica para alterar o skybox
+          console.log('Alterando skybox');
+          // Ajustar a imagem do skybox e o 360
+          const skyboxImage = 'rosendal_plains_2_2k.hdr';
+          modelo2D.setAttribute('skybox-image', skyboxImage);
+          modelo2D.setAttribute('environment-image', skyboxImage);
+          modelo2D.setAttribute('skybox-height', '2rem');
+          modelo2D.setAttribute('shadow-softness', '1');
+          modelo2D.setAttribute('shadow-intensity', '5');
+          modelo2D.setAttribute('exposure', '2');
+        } else if (func === 'ar') {
+          // Lógica para ativar o AR
+          console.log('Ativando AR');
+          modelo2D.activateAR();
+        } else if (func === '360') {
+          // Lógica para ativar o modo 360
+          console.log('Ativando modo 360');
+        }
       });
     });
   </script>
-
-  <script src="rotacao.js"></script>
-  <script src="script.js"></script>
-  <script src="img.js"></script>
-  <script src="/modelo_moto/telacar.js"></script>
-  <script src="carvariantes.js"></script>
-  <script src="hostpost.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const varianteBlue = document.getElementById('varianteBlue');
-
-      varianteBlue.addEventListener('click', function() {
-        this.classList.toggle('selecionado');
-      });
-    });
-
-    const colorSwatches = document.querySelectorAll('.color-swatch');
-
-    colorSwatches.forEach(swatch => {
-      swatch.addEventListener('click', () => {
-        colorSwatches.forEach(s => s.classList.remove('selected'));
-        swatch.classList.add('selected');
-      });
-    });
-
     const variantes = {
       varianteDefault: 'Default',
-      varianteOrange: 'ORANGE',
-      varianteRed: 'RED',
-      varianteBlue: 'RED',
+      varianteOrange: 'BLUE',
+      varianteRed: 'ORANGE',
+      varianteBlue:'RED',
+      // Adicione mais variantes conforme necessário
     };
 
+    // Certifique-se de que o model-viewer com ID "shoe" existe no seu HTML
     const modelViewerVariants = document.querySelector("model-viewer#modelo2D");
 
     Object.keys(variantes).forEach(id => {
       document.getElementById(id).addEventListener('click', function() {
+        // Aqui, usamos a variável `varianteNome` para atribuir a variante correta
         const varianteNome = variantes[id];
-        modelViewerVariants.variantName = varianteNome;
+        modelViewerVariants.variantName = varianteNome; // A linha corrigida
       });
     });
-
-    const ModelViewerElement = customElements.get('model-viewer#modelo2D');
-    ModelViewerElement.dracoDecoderLocation = '/modelo_car_configurator/modelo_moto/DRACOLoader.js';
-
-    (() => {
-      const modelViewerVariants = document.querySelector('#modelo2D');
-      const time = performance.now();
-
-      const animate = (now) => {
-        modelViewer.shadowIntensity = oscillate(0, 2, 4000, now - time);
-        requestAnimationFrame(animate);
-      };
-
-      animate();
-    })();
-
-    const selectiveComposer = document.querySelector("effect-composer#customComposer");
-    const selectiveBloom = selectiveComposer.querySelector("selective-bloom-effect");
-
-    selectiveComposer.addEventListener('updated-selection', () => {
-      const selection = [];
-      selectiveComposer.selection.forEach((obj) => 
-        (obj.material.emissive.r > 0 
-        || obj.material.emissive.g > 0 
-        || obj.material.emissive.b > 0) &&
-          selection.push(obj)
-      );
-      selectiveBloom.selection = selection;
-    });
-
-    const modelViewer = document.querySelector("#modelo2D");
-
-    let lastX;
-    let panning = false;
-    let skyboxAngle = 0;
-    let radiansPerPixel;
-
-    const startPan = () => {
-      const orbit = modelViewer.getCameraOrbit();
-      const { radius } = orbit;
-      radiansPerPixel = -1 * radius / modelViewer.getBoundingClientRect().height;
-      modelViewer.interactionPrompt = 'none';
-    };
-
-    const updatePan = (thisX) => {      
-      const delta = (thisX - lastX) * radiansPerPixel;
-      lastX = thisX;
-      skyboxAngle += delta;
-      const orbit = modelViewer.getCameraOrbit();
-      orbit.theta += delta;
-      modelViewer.cameraOrbit = orbit.toString();
-      modelViewer.resetTurntableRotation(skyboxAngle);
-      modelViewer.jumpCameraToGoal();
-    }
-
-    modelViewer.addEventListener('mousedown', (event) => {
-      panning = event.button === 2 || event.ctrlKey || event.metaKey || event.shiftKey;
-      if (!panning)
-        return;
-
-      lastX = event.clientX;
-      startPan();
-      event.stopPropagation();
-    }, true);
-
-    modelViewer.addEventListener('touchstart', (event) => {
-      const {targetTouches, touches} = event;
-      panning = targetTouches.length === 2 && targetTouches.length === touches.length;
-      if (!panning)
-        return;
-
-      lastX = 0.5 * (targetTouches[0].clientX + targetTouches[1].clientX);
-      startPan();
-    }, true);
-
-    self.addEventListener('mousemove', (event) => {
-      if (!panning)
-        return;
-
-      updatePan(event.clientX);
-      event.stopPropagation();
-    }, true);
-
-    modelViewer.addEventListener('touchmove', (event) => {
-      if (!panning || event.targetTouches.length !== 2)
-        return;
-
-      const {targetTouches} = event;
-      const thisX = 0.5 * (targetTouches[0].clientX + targetTouches[1].clientX);
-      updatePan(thisX);
-    }, true);
-
-    self.addEventListener('mouseup', (event) => {
-      panning = false;
-    }, true);
-
-    modelViewer.addEventListener('touchend', (event) => {
-      panning = false;
-    }, true);
-  </script>
-  <script>
-    // AbrirAr.js
-
-  document.addEventListener('DOMContentLoaded', function() {
-  const modelo2D = document.getElementById('modelo2D');
-  const abrirAR = document.getElementById('abrirAR');
-
-  abrirAR.addEventListener('click', function() {
-    if (modelo2D && modelo2D.activateAR) {
-      modelo2D.activateAR();
-    } else {
-      console.error('A função activateAR não está disponível no elemento model-viewer.');
-    }
-  });
-});
-
   </script>
   <script>
     const modelViewer = document.getElementById('modelo2D');
@@ -430,13 +256,13 @@
         modelViewer.animationName = 'Object_126Action.001';
         modelViewer.play();
         setTimeout(() => modelViewer.pause(), 1500); // Ajuste o tempo conforme necessário
-        btnOpenFrontDoor.querySelector('img').src = 'ICONES FUNDO BRANCO-01.png'; // Troque o ícone
+        btnOpenFrontDoor.querySelector('img').src = 'porta-do-carro.png'; // Troque o ícone
       } else {
         modelViewer.currentTime = 0;
         modelViewer.animationName = 'Object_126Action.001';
         modelViewer.play();
         setTimeout(() => modelViewer.pause(), 0); // Ajuste o tempo conforme necessário
-        btnOpenFrontDoor.querySelector('img').src = 'ICONES FUNDO BRANCO-01.png'; // Troque o ícone
+        btnOpenFrontDoor.querySelector('img').src = 'porta-do-carro.png'; // Troque o ícone
       }
     });
   
@@ -446,13 +272,13 @@
         modelViewer.animationName = 'Object_93Action.001';
         modelViewer.play();
         setTimeout(() => modelViewer.pause(), 1500); // Ajuste o tempo conforme necessário
-        btnOpenBackDoor.querySelector('img').src = 'ICONES FUNDO BRANCO-03.png'; // Troque o ícone
+        btnOpenBackDoor.querySelector('img').src = 'carro.png'; // Troque o ícone
       } else {
         modelViewer.currentTime = 0;
         modelViewer.animationName = 'Object_93Action.001';
         modelViewer.play();
         setTimeout(() => modelViewer.pause(), 0); // Ajuste o tempo conforme necessário
-        btnOpenBackDoor.querySelector('img').src = 'ICONES FUNDO BRANCO-03.png'; // Troque o ícone
+        btnOpenBackDoor.querySelector('img').src = 'carro.png'; // Troque o ícone
       }
     });
   
@@ -462,15 +288,34 @@
         modelViewer.animationName = 'Object_91Action.001';
         modelViewer.play();
         setTimeout(() => modelViewer.pause(), 1500); // Ajuste o tempo conforme necessário
-        btnOpenHood.querySelector('img').src = 'ICONES FUNDO BRANCO-04.png'; // Troque o ícone
+        btnOpenBackDoor.querySelector('img').src = 'car-door-vector.jpg'; // Troque o ícone
       } else {
         modelViewer.currentTime = 0;
         modelViewer.animationName = 'Object_91Action.001';
         modelViewer.play();
         setTimeout(() => modelViewer.pause(), 0); // Ajuste o tempo conforme necessário
-        btnOpenHood.querySelector('img').src = 'ICONES FUNDO BRANCO-04.png'; // Troque o ícone
+        btnOpenHood.querySelector('img').src = 'car-door-vector.jpg'; // Troque o ícone
       }
     });
+  </script>
+  <script>
+  getElementById('botaoRotacao').addEventListener('click', function() {
+  const modelViewer = document.getElementById('modelo2D');
+
+  // Verifica se o auto-rotate já está ativado
+  if (modelViewer.hasAttribute('auto-rotate')) {
+      // Se estiver, desativa e muda para a imagem original
+      modelViewer.removeAttribute('auto-rotate');
+      this.classList.remove('botao-rotacao-ativo');
+      this.classList.add('botao-rotacao');
+  } else {
+      // Se não, ativa e muda para a imagem de hover
+      modelViewer.setAttribute('auto-rotate', '');
+      this.classList.add('botao-rotacao-ativo');
+      this.classList.remove('botao-rotacao');
+  }
+});
+
   </script>
 </body>
 </html>
