@@ -6,405 +6,93 @@
   <meta name="description" content="Product Configurator">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com/3.2.0"></script>
-  <script src="./tailwind.config.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@google/model-viewer@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.js"></script>
-  <script async src="https://ga.jspm.io/npm:es-module-shims@1.7.1/dist/es-module-shims.js"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer/dist/model-viewer-module.min.js"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer-effects/dist/model-viewer-effects.min.js"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@khronos/gltf-transform@0.14.2/lib/index.js"></script>
-  <link type="text/css" href="./styles.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    body { font-family: 'Goldman', cursive;
-            height: 100vh;
-            width: 100%;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f0f0f0;
-    }
-    @media (min-width: 768px) and (max-width: 1024px) {
-      /* Estilos específicos para modo tablet */
-      .flex-wrap {
-        justify-content: center;
-      }
-    }
-    @media (max-width: 767px) {
-      /* Estilos específicos para modo mobile */
-      .overlay-scroll {
-        overflow-x: auto;
-        white-space: nowrap;
-        justify-content: center;
-      }
-      .overlay-scroll div {
-        display: inline-block;
-        vertical-align: top;
-      }
-      .footer-buttons {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-around;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        padding: 1rem;
-      }
-      .footer-buttons > div {
-        flex: 0 0 auto;
-        background-color: #0000;
-      }
-      .footer-buttons span {
-        display: none;
-      }
-      .footer-buttons img, .footer-buttons div {
-        width: 2.75rem;
-        height: 2.75rem;
-      }
-    }
-
-    /* Estilos para o menu off-canvas */
-    .off-canvas-menu {
-      position: fixed;
-      bottom: 0;
-      left: 0;
+    body {
+      font-family: 'Goldman', cursive;
+      height: 100vh;
       width: 100%;
-      background-color: rgba(14, 13, 13, 0);
-      transform: translateY(100%);
-      transition: transform 0.3s ease-in-out;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at center, #202020, #000000);
     }
-
-    .off-canvas-menu.open {
-      transform: translateY(0);
-      bottom: 4rem;
+    model-viewer {
+      width: 100%;
+      height: 60vh;
     }
-
-    .menu-toggle {
-      position: fixed;
-      bottom: 1rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #0000007a;
-      color: #bdbdbd;
-      padding: 0.5rem 1rem;
-      border-radius: 9999px;
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 1rem;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+    }
+    .control-btn {
+      width: 3rem;
+      height: 3rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #333, #111);
+      box-shadow: 4px 4px 6px #000, -4px -4px 6px #333;
+      transition: transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
     }
-
-    #varianteBlue div {
-  background: linear-gradient(145deg, #1e3a8a, #3b82f6, #89c9ff);
-  box-shadow: 4px 4px 8px #1e40af, -4px -4px 8px #3b82f6;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-#varianteBlue div:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 12px #1e40af, -6px -6px 12px #3b82f6;
-}
-
-#varianteBlue span {
-  margin-top: 8px;
-  color: #3b83f600;
-}
-#varianteRed div {
-  background: linear-gradient(145deg, #8b0000, #ff6347, #ff9f9f);
-  box-shadow: 4px 4px 8px #b22222, -4px -4px 8px #ff6347;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-#varianteRed div:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 12px #b22222, -6px -6px 12px #ff6347;
-}
-
-#varianteRed span {
-  margin-top: 8px;
-  color: #ff634700;
-}
-
-#varianteOrange div {
-  background: linear-gradient(145deg, #ec3c10f1, #ff3c00, #ffd27f);
-  box-shadow: 4px 4px 8px #ff4500, -4px -4px 8px #ff5100;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-#varianteOrange div:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 12px #ff4400cb, -6px -6px 12px #ff5100ea;
-}
-
-#varianteOrange span {
-  margin-top: 8px;
-  color: #ff480000;
-}
-
-#varianteDefault div {
-  background: linear-gradient(145deg, #af8211, #7c5e0c, #c98d0d);
-  box-shadow: 4px 4px 8px #b38b09, -4px -4px 8px #7e6b03;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-#varianteDefault div:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 12px #8a6b05, -6px -6px 12px #bda208;
-}
-
-#varianteDefault span {
-  margin-top: 8px;
-  color: #9b590300;
-}
+    .control-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 6px 6px 8px #000, -6px -6px 8px #444;
+    }
+    .icon {
+      width: 2rem;
+      height: 2rem;
+    }
   </style>
 </head>
-<body style="display: center; height: 100vh; width: 100%; align-items: center;">
-  <model-viewer id="modelo2D" src="Bike.glb" ar ar-placement="floor" ar-scale="auto" ar-modes="webxr scene-viewer quick-look" camera-controls touch-action="pan-y" shadow-intensity="5" environment-image="little.hdr" exposure="1" shadow-softness="1" tone-mapping="neutral" skybox-image="little.hdr" skybox-height="2rem" max-camera-orbit="auto 90deg auto"  ios-src="https://cdn.glitch.me/91455676-3530-44f6-a8f2-fb69864af576/Bike.usdz" xr-environment scale="1 1 1">
+<body>
+  <model-viewer id="model" src="Bike.glb" ar ar-modes="webxr scene-viewer quick-look" ios-src="Bike.usdz" camera-controls shadow-intensity="5" environment-image="studio_small_09_4k.hdr" exposure="1" tone-mapping="neutral">
+    <button slot="ar-button" class="ar-button">View in AR</button>
   </model-viewer>
-
-  <div id="menuToggle" class="menu-toggle">
-    <span>&#x25B2;</span> <!-- Ícone de seta -->
-  </div>
-
-  <footer id="conteudo" class="overlay-scroll off-canvas-menu">
-    <div class="footer-buttons flex flex-col justify-center p-4 shadow-md mx-auto w-full h-auto transition-all duration-300 ease-in-out hover:shadow-lg">
-      <div class="flex gap-4 flex-nowrap justify-center">
-        <div id="botaoRotacao" class="flex flex-col items-center cursor-pointer">
-          <img src="ICONES FUNDO BRANCO-04.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Rotate</span>
-        </div>
-        <div id="ativarSkybox" class="flex flex-col items-center cursor-pointer">
-          <img src="ICONES FUNDO BRANCO-06.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
-        <div id="abrirAR" class="flex flex-col items-center cursor-pointer">
-          <img src="ICONES FUNDO BRANCO-05.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">AR</span>
-        </div>
-        <div id="varianteDefault" class="flex flex-col items-center cursor-pointer">
-          <img src="CORES-08.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
-        <div id="varianteOrange" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-07.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
-        <div id="varianteRed" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-11.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
-        <div id="varianteBlue" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-10.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
-      </div>
+  
+  <div class="controls">
+    <div class="control-btn" id="rotate">
+      <img class="icon" src="rotate_icon.png" alt="Rotate">
     </div>
-  </footer>
-
-  <effect-composer id="customComposer" render-mode="performance">
-    <smaa-effect quality="high" blend-mode="DEFAULT" opacity="1"></smaa-effect>
-    <color-grade-effect brightness="0.0" contrast="0.2" saturation="0.2" smoothing="0.3" tonemapping="optimized_cineon" blend-mode="DEFAULT" opacity="1" hue="0.0, 2 * PI"></color-grade-effect>
-    <selective-bloom-effect strength="0.0" radius="0.8" threshold="1.0" smoothing="0.025"></selective-bloom-effect>
-    <ssao-effect></ssao-effect>
-  </effect-composer>
-
+    <div class="control-btn" id="skybox1">
+      <img class="icon" src="skybox1_icon.png" alt="Skybox 1">
+    </div>
+    <div class="control-btn" id="skybox2">
+      <img class="icon" src="skybox2_icon.png" alt="Skybox 2">
+    </div>
+    <div class="control-btn" id="edit">
+      <img class="icon" src="edit_icon.png" alt="Edit Model">
+    </div>
+  </div>
+  
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const modelo2D = document.getElementById('modelo2D');
-      const ativarSkybox = document.getElementById('ativarSkybox');
-      const abrirAR = document.getElementById('abrirAR');
-      const menuToggle = document.getElementById('menuToggle');
-      const offCanvasMenu = document.querySelector('.off-canvas-menu');
-
-      ativarSkybox.addEventListener('click', function() {
-        const caminhoImagemHDRPrincipal = 'rosendal_plains_2_2k.hdr';
-        const caminhoImagemHDRSecundario = 'kloppenheim_02_4k.hdr';
-        const skyboxAtivo = modelo2D.getAttribute('skybox-image');
-
-        if (skyboxAtivo === caminhoImagemHDRSecundario) {
-          modelo2D.setAttribute('skybox-image', caminhoImagemHDRPrincipal);
-          modelo2D.setAttribute('environment-image', caminhoImagemHDRPrincipal);
-        } else {
-          modelo2D.setAttribute('skybox-image', caminhoImagemHDRSecundario);
-          modelo2D.setAttribute('environment-image', caminhoImagemHDRSecundario);
-        }
-        modelo2D.setAttribute('skybox-height', '2rem');
-        modelo2D.setAttribute('shadow-softness', '1');
-        modelo2D.setAttribute('shadow-intensity','5');
-        modelo2D.setAttribute('exposure','2');
-
-
-        // Manter o CSS do body
-            document.body.style.height = '100vh';
-            document.body.style.width = '100%';
-            document.body.style.alignItems = 'center';
-            document.body.style.justifyContent = 'center';
-      });
-
-      abrirAR.addEventListener('click', function() {
-        modelo2D.activateAR();
-      });
-
-      menuToggle.addEventListener('click', function() {
-        offCanvasMenu.classList.toggle('open');
-        menuToggle.innerHTML = offCanvasMenu.classList.contains('open') ? '&#x25BC;' : '&#x25B2;'; // Alterna entre seta para cima e para baixo
-      });
+    document.getElementById('rotate').addEventListener('click', () => {
+      alert('Rotate function!');
     });
-  </script>
-
-  <script src="rotacao.js"></script>
-  <script src="script.js"></script>
-  <script src="img.js"></script>
-  <script src="/modelo_moto/telacar.js"></script>
-  <script src="carvariantes.js"></script>
-  <script src="hostpost.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const varianteBlue = document.getElementById('varianteBlue');
-
-      varianteBlue.addEventListener('click', function() {
-        this.classList.toggle('selecionado');
-      });
+    document.getElementById('skybox1').addEventListener('click', () => {
+      document.getElementById('model').setAttribute('environment-image', 'studio_small_09_4k.hdr');
     });
-
-    const colorSwatches = document.querySelectorAll('.color-swatch');
-
-    colorSwatches.forEach(swatch => {
-      swatch.addEventListener('click', () => {
-        colorSwatches.forEach(s => s.classList.remove('selected'));
-        swatch.classList.add('selected');
-      });
+    document.getElementById('skybox2').addEventListener('click', () => {
+      document.getElementById('model').setAttribute('environment-image', 'venice_sunset_4k.hdr');
     });
-
-    const variantes = {
-      varianteDefault: 'Default',
-      varianteOrange: 'ORANGE',
-      varianteRed: 'RED',
-      varianteBlue: 'BLUE',
-    };
-
-    const modelViewerVariants = document.querySelector("model-viewer#modelo2D");
-
-    Object.keys(variantes).forEach(id => {
-      document.getElementById(id).addEventListener('click', function() {
-        const varianteNome = variantes[id];
-        modelViewerVariants.variantName = varianteNome;
-      });
+    document.getElementById('edit').addEventListener('click', () => {
+      document.getElementById('model').setAttribute('camera-controls', '');
+      document.getElementById('model').setAttribute('touch-action', 'pan-y');
+      alert('Edit mode activated!');
     });
-
-    const ModelViewerElement = customElements.get('model-viewer#modelo2D');
-    ModelViewerElement.dracoDecoderLocation = '/modelo_car_configurator/modelo_moto/DRACOLoader.js';
-
-    (() => {
-      const modelViewerVariants = document.querySelector('#modelo2D');
-      const time = performance.now();
-
-      const animate = (now) => {
-        modelViewer.shadowIntensity = oscillate(0, 2, 4000, now - time);
-        requestAnimationFrame(animate);
-      };
-
-      animate();
-    })();
-
-    const selectiveComposer = document.querySelector("effect-composer#customComposer");
-    const selectiveBloom = selectiveComposer.querySelector("selective-bloom-effect");
-
-    selectiveComposer.addEventListener('updated-selection', () => {
-      const selection = [];
-      selectiveComposer.selection.forEach((obj) => 
-        (obj.material.emissive.r > 0 
-        || obj.material.emissive.g > 0 
-        || obj.material.emissive.b > 0) &&
-          selection.push(obj)
-      );
-      selectiveBloom.selection = selection;
-    });
-
-    const modelViewer = document.querySelector("#modelo2D");
-
-    let lastX;
-    let panning = false;
-    let skyboxAngle = 0;
-    let radiansPerPixel;
-
-    const startPan = () => {
-      const orbit = modelViewer.getCameraOrbit();
-      const { radius } = orbit;
-      radiansPerPixel = -1 * radius / modelViewer.getBoundingClientRect().height;
-      modelViewer.interactionPrompt = 'none';
-    };
-
-    const updatePan = (thisX) => {      
-      const delta = (thisX - lastX) * radiansPerPixel;
-      lastX = thisX;
-      skyboxAngle += delta;
-      const orbit = modelViewer.getCameraOrbit();
-      orbit.theta += delta;
-      modelViewer.cameraOrbit = orbit.toString();
-      modelViewer.resetTurntableRotation(skyboxAngle);
-      modelViewer.jumpCameraToGoal();
-    }
-
-    modelViewer.addEventListener('mousedown', (event) => {
-      panning = event.button === 2 || event.ctrlKey || event.metaKey || event.shiftKey;
-      if (!panning)
-        return;
-
-      lastX = event.clientX;
-      startPan();
-      event.stopPropagation();
-    }, true);
-
-    modelViewer.addEventListener('touchstart', (event) => {
-      const {targetTouches, touches} = event;
-      panning = targetTouches.length === 2 && targetTouches.length === touches.length;
-      if (!panning)
-        return;
-
-      lastX = 0.5 * (targetTouches[0].clientX + targetTouches[1].clientX);
-      startPan();
-    }, true);
-
-    self.addEventListener('mousemove', (event) => {
-      if (!panning)
-        return;
-
-      updatePan(event.clientX);
-      event.stopPropagation();
-    }, true);
-
-    modelViewer.addEventListener('touchmove', (event) => {
-      if (!panning || event.targetTouches.length !== 2)
-        return;
-
-      const {targetTouches} = event;
-      const thisX = 0.5 * (targetTouches[0].clientX + targetTouches[1].clientX);
-      updatePan(thisX);
-    }, true);
-
-    self.addEventListener('mouseup', (event) => {
-      panning = false;
-    }, true);
-
-    modelViewer.addEventListener('touchend', (event) => {
-      panning = false;
-    }, true);
-  </script>
-  <script>
-    // AbrirAr.js
-
-  document.addEventListener('DOMContentLoaded', function() {
-  const modelo2D = document.getElementById('modelo2D');
-  const abrirAR = document.getElementById('abrirAR');
-
-  abrirAR.addEventListener('click', function() {
-    if (modelo2D && modelo2D.activateAR) {
-      modelo2D.activateAR();
-    } else {
-      console.error('A função activateAR não está disponível no elemento model-viewer.');
-    }
-  });
-});
-
   </script>
 </body>
 </html>
