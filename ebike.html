@@ -8,6 +8,7 @@
   <script src="https://cdn.tailwindcss.com/3.2.0"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@google/model-viewer@latest"></script>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
@@ -70,11 +71,11 @@
     <div class="control-btn" id="skybox1">
       <img class="icon" src="skybox1_icon.png" alt="Skybox 1">
     </div>
-    <div class="control-btn" id="skybox2">
-      <img class="icon" src="skybox2_icon.png" alt="Skybox 2">
-    </div>
     <div class="control-btn" id="edit">
       <img class="icon" src="edit_icon.png" alt="Edit Model">
+    </div>
+    <div class="control-btn" id="changeColor">
+      <img class="icon" src="color_icon.png" alt="Change Color">
     </div>
   </div>
   
@@ -85,13 +86,15 @@
     document.getElementById('skybox1').addEventListener('click', () => {
       document.getElementById('model').setAttribute('environment-image', 'studio_small_09_4k.hdr');
     });
-    document.getElementById('skybox2').addEventListener('click', () => {
-      document.getElementById('model').setAttribute('environment-image', 'venice_sunset_4k.hdr');
-    });
     document.getElementById('edit').addEventListener('click', () => {
       document.getElementById('model').setAttribute('camera-controls', '');
       document.getElementById('model').setAttribute('touch-action', 'pan-y');
       alert('Edit mode activated!');
+    });
+    document.getElementById('changeColor').addEventListener('click', () => {
+      const model = document.getElementById('model');
+      const currentColor = model.getAttribute('variant-name');
+      model.setAttribute('variant-name', currentColor === 'blue' ? 'red' : 'blue');
     });
   </script>
 </body>
