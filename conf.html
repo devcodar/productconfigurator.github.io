@@ -17,14 +17,15 @@
   <script type="module" src="https://cdn.jsdelivr.net/npm/@khronos/gltf-transform@0.14.2/lib/index.js"></script>
   <link type="text/css" href="./styles.css" rel="stylesheet">
   <style>
-    body { font-family: 'Goldman', cursive;
-            height: 100vh;
-            width: 100%;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f0f0f0;
+    body { 
+      font-family: 'Goldman', cursive;
+      height: 100vh;
+      width: 100%;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f0f0;
     }
     @media (min-width: 768px) and (max-width: 1024px) {
       .flex-wrap {
@@ -67,14 +68,15 @@
       bottom: 0;
       left: 0;
       width: 100%;
-      background-color: rgba(14, 13, 13, 0);
+      background-color: rgba(14, 13, 13, 0.9);
       transform: translateY(100%);
       transition: transform 0.3s ease-in-out;
+      padding: 1rem;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     }
 
     .off-canvas-menu.open {
       transform: translateY(0);
-      bottom: 4rem;
     }
 
     .menu-toggle {
@@ -87,69 +89,45 @@
       padding: 0.5rem 1rem;
       border-radius: 9999px;
       cursor: pointer;
+      z-index: 1000;
     }
 
-    #varianteBlue div {
-      background: linear-gradient(145deg, #1e3a8a, #3b82f6, #89c9ff);
-      box-shadow: 4px 4px 8px #1e40af, -4px -4px 8px #3b82f6;
-      transition: transform 0.2s, box-shadow 0.2s;
+    .color-picker {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 1rem;
     }
 
-    #varianteBlue div:hover {
-      transform: translateY(-2px);
-      box-shadow: 6px 6px 12px #1e40af, -6px -6px 12px #3b82f6;
+    .color-option {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
     }
 
-    #varianteBlue span {
-      margin-top: 8px;
-      color: #3b83f600;
-    }
-    #varianteRed div {
-      background: linear-gradient(145deg, #8b0000, #ff6347, #ff9f9f);
-      box-shadow: 4px 4px 8px #b22222, -4px -4px 8px #ff6347;
-      transition: transform 0.2s, box-shadow 0.2s;
+    .color-option.selected {
+      border-color: #000;
     }
 
-    #varianteRed div:hover {
-      transform: translateY(-2px);
-      box-shadow: 6px 6px 12px #b22222, -6px -6px 12px #ff6347;
+    .edit-mode {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 1rem;
     }
 
-    #varianteRed span {
-      margin-top: 8px;
-      color: #ff634700;
+    .edit-button {
+      background-color: #3b82f6;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: background-color 0.2s;
     }
 
-    #varianteOrange div {
-      background: linear-gradient(145deg, #ec3c10f1, #ff3c00, #ffd27f);
-      box-shadow: 4px 4px 8px #ff4500, -4px -4px 8px #ff5100;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    #varianteOrange div:hover {
-      transform: translateY(-2px);
-      box-shadow: 6px 6px 12px #ff4400cb, -6px -6px 12px #ff5100ea;
-    }
-
-    #varianteOrange span {
-      margin-top: 8px;
-      color: #ff480000;
-    }
-
-    #varianteDefault div {
-      background: linear-gradient(145deg, #af8211, #7c5e0c, #c98d0d);
-      box-shadow: 4px 4px 8px #b38b09, -4px -4px 8px #7e6b03;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    #varianteDefault div:hover {
-      transform: translateY(-2px);
-      box-shadow: 6px 6px 12px #8a6b05, -6px -6px 12px #bda208;
-    }
-
-    #varianteDefault span {
-      margin-top: 8px;
-      color: #9b590300;
+    .edit-button.active {
+      background-color: #1e40af;
     }
   </style>
 </head>
@@ -176,22 +154,16 @@
           <img src="ICONES FUNDO BRANCO-05.png" class="shrink-0 aspect-square w-12 h-12">
           <span class="text-sm">AR</span>
         </div>
-        <div id="varianteDefault" class="flex flex-col items-center cursor-pointer">
-          <img src="CORES-08.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
-        <div id="varianteOrange" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-07.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
-        <div id="varianteRed" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-11.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
-        <div id="varianteBlue" class="flex flex-col items-center cursor-pointer">
-          <img src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-10.png" class="shrink-0 aspect-square w-12 h-12">
-          <span class="text-sm">Skybox</span>
-        </div>
+      </div>
+      <div class="color-picker">
+        <div id="varianteDefault" class="color-option" style="background-color: #af8211;"></div>
+        <div id="varianteOrange" class="color-option" style="background-color: #ff3c00;"></div>
+        <div id="varianteRed" class="color-option" style="background-color: #ff6347;"></div>
+        <div id="varianteBlue" class="color-option" style="background-color: #3b82f6;"></div>
+      </div>
+      <div class="edit-mode">
+        <div id="editModel" class="edit-button">Edit Model</div>
+        <div id="editScene" class="edit-button">Edit Scene</div>
       </div>
     </div>
   </footer>
@@ -210,6 +182,9 @@
       const abrirAR = document.getElementById('abrirAR');
       const menuToggle = document.getElementById('menuToggle');
       const offCanvasMenu = document.querySelector('.off-canvas-menu');
+      const colorOptions = document.querySelectorAll('.color-option');
+      const editModelButton = document.getElementById('editModel');
+      const editSceneButton = document.getElementById('editScene');
 
       ativarSkybox.addEventListener('click', function() {
         const caminhoImagemHDRPrincipal = 'rosendal_plains_2_2k.hdr';
@@ -242,6 +217,25 @@
         offCanvasMenu.classList.toggle('open');
         menuToggle.innerHTML = offCanvasMenu.classList.contains('open') ? '&#x25BC;' : '&#x25B2;';
       });
+
+      colorOptions.forEach(option => {
+        option.addEventListener('click', function() {
+          colorOptions.forEach(o => o.classList.remove('selected'));
+          this.classList.add('selected');
+          const color = this.style.backgroundColor;
+          // Implement color change logic here
+        });
+      });
+
+      editModelButton.addEventListener('click', function() {
+        editModelButton.classList.toggle('active');
+        // Implement model editing logic here
+      });
+
+      editSceneButton.addEventListener('click', function() {
+        editSceneButton.classList.toggle('active');
+        // Implement scene editing logic here
+      });
     });
   </script>
 
@@ -251,152 +245,5 @@
   <script src="/modelo_moto/telacar.js"></script>
   <script src="carvariantes.js"></script>
   <script src="hostpost.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const varianteBlue = document.getElementById('varianteBlue');
-
-      varianteBlue.addEventListener('click', function() {
-        this.classList.toggle('selecionado');
-      });
-    });
-
-    const colorSwatches = document.querySelectorAll('.color-swatch');
-
-    colorSwatches.forEach(swatch => {
-      swatch.addEventListener('click', () => {
-        colorSwatches.forEach(s => s.classList.remove('selected'));
-        swatch.classList.add('selected');
-      });
-    });
-
-    const variantes = {
-      varianteDefault: 'Default',
-      varianteOrange: 'ORANGE',
-      varianteRed: 'RED',
-      varianteBlue: 'BLUE',
-    };
-
-    const modelViewerVariants = document.querySelector("model-viewer#modelo2D");
-
-    Object.keys(variantes).forEach(id => {
-      document.getElementById(id).addEventListener('click', function() {
-        const varianteNome = variantes[id];
-        modelViewerVariants.variantName = varianteNome;
-      });
-    });
-
-    const ModelViewerElement = customElements.get('model-viewer#modelo2D');
-    ModelViewerElement.dracoDecoderLocation = '/modelo_car_configurator/modelo_moto/DRACOLoader.js';
-
-    (() => {
-      const modelViewerVariants = document.querySelector('#modelo2D');
-      const time = performance.now();
-
-      const animate = (now) => {
-        modelViewer.shadowIntensity = oscillate(0, 2, 4000, now - time);
-        requestAnimationFrame(animate);
-      };
-
-      animate();
-    })();
-
-    const selectiveComposer = document.querySelector("effect-composer#customComposer");
-    const selectiveBloom = selectiveComposer.querySelector("selective-bloom-effect");
-
-    selectiveComposer.addEventListener('updated-selection', () => {
-      const selection = [];
-      selectiveComposer.selection.forEach((obj) => 
-        (obj.material.emissive.r > 0 
-        || obj.material.emissive.g > 0 
-        || obj.material.emissive.b > 0) &&
-          selection.push(obj)
-      );
-      selectiveBloom.selection = selection;
-    });
-
-    const modelViewer = document.querySelector("#modelo2D");
-
-    let lastX;
-    let panning = false;
-    let skyboxAngle = 0;
-    let radiansPerPixel;
-
-    const startPan = () => {
-      const orbit = modelViewer.getCameraOrbit();
-      const { radius } = orbit;
-      radiansPerPixel = -1 * radius / modelViewer.getBoundingClientRect().height;
-      modelViewer.interactionPrompt = 'none';
-    };
-
-    const updatePan = (thisX) => {      
-      const delta = (thisX - lastX) * radiansPerPixel;
-      lastX = thisX;
-      skyboxAngle += delta;
-      const orbit = modelViewer.getCameraOrbit();
-      orbit.theta += delta;
-      modelViewer.cameraOrbit = orbit.toString();
-      modelViewer.resetTurntableRotation(skyboxAngle);
-      modelViewer.jumpCameraToGoal();
-    }
-
-    modelViewer.addEventListener('mousedown', (event) => {
-      panning = event.button === 2 || event.ctrlKey || event.metaKey || event.shiftKey;
-      if (!panning)
-        return;
-
-      lastX = event.clientX;
-      startPan();
-      event.stopPropagation();
-    }, true);
-
-    modelViewer.addEventListener('touchstart', (event) => {
-      const {targetTouches, touches} = event;
-      panning = targetTouches.length === 2 && targetTouches.length === touches.length;
-      if (!panning)
-        return;
-
-      lastX = 0.5 * (targetTouches[0].clientX + targetTouches[1].clientX);
-      startPan();
-    }, true);
-
-    self.addEventListener('mousemove', (event) => {
-      if (!panning)
-        return;
-
-      updatePan(event.clientX);
-      event.stopPropagation();
-    }, true);
-
-    modelViewer.addEventListener('touchmove', (event) => {
-      if (!panning || event.targetTouches.length !== 2)
-        return;
-
-      const {targetTouches} = event;
-      const thisX = 0.5 * (targetTouches[0].clientX + targetTouches[1].clientX);
-      updatePan(thisX);
-    }, true);
-
-    self.addEventListener('mouseup', (event) => {
-      panning = false;
-    }, true);
-
-    modelViewer.addEventListener('touchend', (event) => {
-      panning = false;
-    }, true);
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const modelo2D = document.getElementById('modelo2D');
-      const abrirAR = document.getElementById('abrirAR');
-
-      abrirAR.addEventListener('click', function() {
-        if (modelo2D && modelo2D.activateAR) {
-          modelo2D.activateAR();
-        } else {
-          console.error('A função activateAR não está disponível no elemento model-viewer.');
-        }
-      });
-    });
-  </script>
 </body>
 </html>
