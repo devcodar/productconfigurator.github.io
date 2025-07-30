@@ -171,13 +171,12 @@
     scale="1 1 1" 
     ios-src="#" 
     xr-environment
-    auto-rotate
-    rotation-per-second="30deg"
     camera-orbit="0deg 75deg 105%"
     camera-target="0m 0m 0m"
     interaction-prompt="none"
     ar-placement="floor"
     quick-look-browsers="safari chrome"
+    ar-scale="3 3 3" <!-- Escala fixa 3:3 -->
   >
     <button class="ar-button" slot="ar-button">
       Ver em AR
@@ -237,6 +236,7 @@
       const setMenu = document.getElementById('setMenu');
       const loadingOverlay = document.getElementById('loading-overlay');
       const botaoRotacao = document.getElementById('botaoRotacao');
+      const customComposer = document.getElementById('customComposer');
 
       // Esconder loading quando o modelo carregar
       modelo2D.addEventListener('load', () => {
@@ -300,7 +300,7 @@
         } else if (func === 'ar') {
           // AR com configuração melhorada
           modelo2D.activateAR();
-          modelo2D.setAttribute('ar-scale', 'fixed');
+          modelo2D.setAttribute('ar-scale', '3 3 3'); // Escala fixa 3:3
           modelo2D.setAttribute('ar-placement', 'floor');
         } else if (func === '360') {
           // Rotação 360 melhorada
@@ -365,8 +365,14 @@
       // AR Event Listeners
       modelo2D.addEventListener('ar-status', (event) => {
         if (event.detail.status === 'session-started') {
-          // Mantém o menu visível durante AR
+          // Garante que o menu e efeitos permaneçam visíveis durante AR
           document.getElementById('floatingMenu').style.display = 'flex';
+          customComposer.style.display = 'block';
+          
+          // Configurações específicas para AR
+          modelo2D.setAttribute('ar-scale', '3 3 3'); // Escala fixa 3:3
+          modelo2D.setAttribute('ar-placement', 'floor');
+          modelo2D.removeAttribute('auto-rotate'); // Remove rotação automática no AR
         }
       });
     });
