@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Product Configurator</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Product Configurator">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com/3.2.0"></script>
+  <script src="./tailwind.config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&display=swap" rel="stylesheet">
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script nomodule src="https://unpkg.com/@google/model-viewer/dist/model-viewer-legacy.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer-effects/dist/model-viewer-effects.min.js"></script>
+  <style>
+    body { 
+      font-family: 'Goldman', cursive;
+      height: 100vh;
+      width: 100%;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f0f0;
+      overflow: hidden;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      --poster-color: transparent;
+      --progress-bar-color: transparent;
+    }
+
+    /* Estilos para o menu flutuante */
+    .floating-menu {
+      position: fixed;
+      bottom: 1rem;
+      right: 4rem;
+      background-color: #141414b9;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .floating-menu img {
+      width: 48px;
+      height: 48px;
+      margin: 0 0.5rem;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .floating-menu img:hover {
+      transform: scale(1.1);
+    }
+
+    .submenu {
+      position: absolute;
+      bottom: 7rem;
+      right: 4.5rem;
+      background-color: #555555;
+      padding: 0.5rem;
+      border-radius: 8px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .submenu img {
+      width: 48px;
+      height: 48px;
+      margin: 0 0.3rem;
+      cursor: pointer;
+    }
+
+    .submenu.active {
+      display: flex;
+    }
+
+    /* Estilo para o plano de fundo realista */
+    .environment-label {
+      position: absolute;
+      bottom: 1rem;
+      left: 1rem;
+      background-color: rgba(0,0,0,0.7);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      z-index: 100;
+    }
+
+    /* Ajustes para tablet */
+    @media (max-width: 1024px) {
+      model-viewer {
+        --environment-image: url(./assets/env/industrial_workshop_1k.hdr);
+      }
+      
+      .floating-menu {
+        bottom: 2rem;
+        right: 2rem;
+      }
+      
+      .submenu {
+        bottom: 8rem;
+        right: 2.5rem;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .floating-menu {
+        bottom: 1rem;
+        right: 50%;
+        transform: translateX(50%);
+        padding: 0.5rem;
+      }
+
+      .floating-menu img {
+        width: 43px;
+        height: 43px;
+        margin: 0.6rem 0;
+      }
+
+      .submenu {
+        bottom: 7rem;
+        right: 50%;
+        transform: translateX(50%);
+      }
+    }
+  </style>
+</head>
+<body>
+  <model-viewer 
+    id="modelo2D" 
+    src="RAPTOR.glb" 
+    ar 
+    ar-modes="webxr scene-viewer quick-look" 
+    camera-controls 
+    touch-action="pan-y" 
+    shadow-intensity="1.5" 
+    environment-image="industrial_workshop_1k.hdr" 
+    exposure="1.2" 
+    shadow-softness="0.8" 
+    tone-mapping="neutral" 
+    skybox-image="industrial_workshop_1k.hdr"
+    auto-rotate
+    rotation-per-second="30deg"
+    camera-orbit="0deg 75deg 105%"
+    camera-target="0m 0m 0m"
+    field-of-view="30deg"
+    max-field-of-view="45deg"
+    min-field-of-view="15deg"
+    interaction-prompt="none"
+    ar-scale="fixed"
+    ar-placement="floor"
+    xr-environment
+    quick-look-browsers="safari chrome"
+  >
+    <div class="environment-label">Ambiente: Oficina Industrial</div>
+  </model-viewer>
+
+  <!-- Menu flutuante estilizado -->
+  <div id="floatingMenu" class="floating-menu">
+    <img src="color-icon.png" alt="Colors" id="btnColors">
+    <img src="icon.png" alt="Behavior" id="btnBehavior">
+    <img src="set-icon.png" alt="Set" id="btnSet">
+  </div>
+
+  <!-- Submenus -->
+  <div id="colorsMenu" class="submenu">
+    <img id="varianteDefault" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-08.png" alt="Blue" data-color="blue">
+    <img id="varianteBlue" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-07.png" alt="Yellow" data-color="yellow">
+    <img id="varianteOrange" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-11.png" alt="Green" data-color="green">
+    <img id="varianteRed" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-10.png" alt="Red" data-color="red">
+  </div>
+
+  <div id="behaviorMenu" class="submenu">
+    <img id="btnOpenFrontDoor" src="icon-door.png" alt="door" data-function="rotate">
+    <img id="btnOpenBackDoor" src="icon-hood.png" alt="Hood" data-function="hood">
+    <img id="btnOpenHood" src="car-trunk-icon.png" alt="Trunk" data-function="trunk">
+    <a href="https://devcodar.github.io/productconfigurator.github.io/"><img src="interno.png" alt="Trunk"></a>
+  </div>
+
+  <div id="setMenu" class="submenu">
+    <img src="icon-skybox.png" alt="Skybox" data-function="skybox" data-env="industrial_workshop_1k">
+    <img src="icon-skybox.png" alt="Skybox" data-function="skybox" data-env="parking_1k">
+    <img src="icon-skybox.png" alt="Skybox" data-function="skybox" data-env="studio_small_03_1k">
+    <img src="icon-ar.png" alt="AR" data-function="ar">
+    <img id="botaoRotacao" src="icon-rotate.png" alt="360" data-function="360">
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const modelo2D = document.getElementById('modelo2D');
+      const btnColors = document.getElementById('btnColors');
+      const btnBehavior = document.getElementById('btnBehavior');
+      const btnSet = document.getElementById('btnSet');
+      const colorsMenu = document.getElementById('colorsMenu');
+      const behaviorMenu = document.getElementById('behaviorMenu');
+      const setMenu = document.getElementById('setMenu');
+      const botaoRotacao = document.getElementById('botaoRotacao');
+
+      // Variáveis de estado
+      let isAutoRotate = true;
+      let currentEnvironment = 'industrial_workshop_1k.hdr';
+
+      // Configuração inicial do modelo
+      modelo2D.addEventListener('load', () => {
+        // Ajustes iniciais para melhor realismo
+        modelo2D.shadowIntensity = 1.5;
+        modelo2D.shadowSoftness = 0.8;
+        modelo2D.exposure = 1.2;
+      });
+
+      // Menu interactions
+      btnColors.addEventListener('click', function() {
+        colorsMenu.classList.toggle('active');
+        behaviorMenu.classList.remove('active');
+        setMenu.classList.remove('active');
+      });
+
+      btnBehavior.addEventListener('click', function() {
+        behaviorMenu.classList.toggle('active');
+        colorsMenu.classList.remove('active');
+        setMenu.classList.remove('active');
+      });
+
+      btnSet.addEventListener('click', function() {
+        setMenu.classList.toggle('active');
+        colorsMenu.classList.remove('active');
+        behaviorMenu.classList.remove('active');
+      });
+
+      // Funções para os submenus
+      colorsMenu.addEventListener('click', function(e) {
+        const color = e.target.getAttribute('data-color');
+        if (color) {
+          // Lógica para alterar a cor
+          console.log('Alterando cor para:', color);
+          // Implementar a mudança de cor no modelo aqui
+        }
+      });
+
+      behaviorMenu.addEventListener('click', function(e) {
+        const func = e.target.getAttribute('data-function');
+        if (func === 'rotate') {
+          // Lógica para rotacionar o modelo
+          console.log('Rotacionando modelo');
+        } else if (func === 'hood') {
+          // Lógica para abrir o capô
+          console.log('Abrindo capô');
+        } else if (func === 'trunk') {
+          // Lógica para abrir o porta-malas
+          console.log('Abrindo porta-malas');
+        }
+      });
+
+      setMenu.addEventListener('click', function(e) {
+        const func = e.target.getAttribute('data-function');
+        const env = e.target.getAttribute('data-env');
+        
+        if (env) {
+          // Mudar ambiente/skybox
+          currentEnvironment = `${env}.hdr`;
+          modelo2D.environmentImage = currentEnvironment;
+          modelo2D.skyboxImage = currentEnvironment;
+          console.log('Ambiente alterado para:', env);
+          
+          // Ajustes específicos por ambiente
+          if (env === 'industrial_workshop_1k') {
+            modelo2D.shadowIntensity = 1.5;
+            modelo2D.exposure = 1.2;
+          } else if (env === 'parking_1k') {
+            modelo2D.shadowIntensity = 1.2;
+            modelo2D.exposure = 1.0;
+          } else {
+            modelo2D.shadowIntensity = 1.0;
+            modelo2D.exposure = 0.9;
+          }
+        } 
+        else if (func === 'ar') {
+          // Ativar AR
+          modelo2D.activateAR();
+          console.log('Ativando AR');
+          
+          // Configurações específicas para AR
+          modelo2D.setAttribute('ar-scale', 'fixed');
+          modelo2D.setAttribute('ar-placement', 'floor');
+        } 
+        else if (func === '360') {
+          // Alternar rotação automática
+          isAutoRotate = !isAutoRotate;
+          modelo2D.autoRotate = isAutoRotate;
+          botaoRotacao.style.opacity = isAutoRotate ? '1' : '0.6';
+          console.log('Rotação automática:', isAutoRotate ? 'ON' : 'OFF');
+        }
+      });
+
+      // AR Event Listeners
+      modelo2D.addEventListener('ar-status', (event) => {
+        if (event.detail.status === 'session-started') {
+          console.log('Sessão AR iniciada');
+          // Mantém o menu visível durante a sessão AR
+          document.getElementById('floatingMenu').style.display = 'flex';
+        }
+      });
+
+      // Variantes do modelo
+      const variantes = {
+        varianteDefault: 'Default',
+        varianteOrange: 'BLUE',
+        varianteRed: 'ORANGE',
+        varianteBlue:'RED',
+      };
+
+      Object.keys(variantes).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.addEventListener('click', function() {
+            const varianteNome = variantes[id];
+            modelo2D.variantName = varianteNome;
+            console.log('Variante selecionada:', varianteNome);
+          });
+        }
+      });
+
+      // Controles de animação
+      const btnOpenFrontDoor = document.getElementById('btnOpenFrontDoor');
+      const btnOpenBackDoor = document.getElementById('btnOpenBackDoor');
+      const btnOpenHood = document.getElementById('btnOpenHood');
+      let hoodOpen = false;
+      let frontDoorOpen = false;
+      let backDoorOpen = false;
+    
+      btnOpenFrontDoor.addEventListener('click', () => {
+        frontDoorOpen = !frontDoorOpen;
+        modelo2D.animationName = 'Object_126Action.001';
+        modelo2D.play();
+        setTimeout(() => modelo2D.pause(), frontDoorOpen ? 1500 : 0);
+      });
+    
+      btnOpenBackDoor.addEventListener('click', () => {
+        backDoorOpen = !backDoorOpen;
+        modelo2D.animationName = 'Object_93Action.001';
+        modelo2D.play();
+        setTimeout(() => modelo2D.pause(), backDoorOpen ? 1500 : 0);
+      });
+    
+      btnOpenHood.addEventListener('click', () => {
+        hoodOpen = !hoodOpen;
+        modelo2D.animationName = 'Object_91Action.001';
+        modelo2D.play();
+        setTimeout(() => modelo2D.pause(), hoodOpen ? 1500 : 0);
+      });
+    });
+  </script>
+</body>
+</html>
