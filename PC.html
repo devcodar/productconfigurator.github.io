@@ -33,7 +33,6 @@
       height: 100%;
       --poster-color: transparent;
       --progress-bar-color: transparent;
-      background-color: #f0f0f0;
     }
 
     /* Estilos para o menu flutuante */
@@ -117,25 +116,6 @@
       z-index: 999;
     }
 
-    @media (max-width: 1024px) {
-      /* Tablet specific styles */
-      model-viewer {
-        --environment-image: url(industrial_workshop_1k.hdr);
-        camera-orbit: 0deg 75deg 105%;
-        field-of-view: 30deg;
-      }
-      
-      .floating-menu {
-        bottom: 2rem;
-        right: 2rem;
-      }
-      
-      .submenu {
-        bottom: 8rem;
-        right: 2.5rem;
-      }
-    }
-
     @media (max-width: 767px) {
       /* Menu flutuante responsivo */
       .floating-menu {
@@ -177,12 +157,12 @@
     ar-modes="webxr scene-viewer quick-look" 
     camera-controls 
     touch-action="pan-y" 
-    shadow-intensity="1.5" 
-    environment-image="industrial_workshop_1k.hdr" 
-    exposure="1.2" 
-    shadow-softness="0.8" 
+    shadow-intensity="1.2" 
+    environment-image="WhiteStudio.hdr" 
+    exposure="1.1" 
+    shadow-softness="0.7" 
     tone-mapping="neutral" 
-    skybox-image="industrial_workshop_1k.hdr" 
+    skybox-image="WhiteStudio.hdr" 
     skybox-height="2rem" 
     max-camera-orbit="auto 90deg auto" 
     min-camera-orbit="auto 15deg auto"
@@ -227,9 +207,7 @@
   </div>
 
   <div id="setMenu" class="submenu">
-    <img src="icon-skybox.png" alt="Skybox" data-function="skybox" data-env="industrial_workshop_1k">
-    <img src="icon-skybox.png" alt="Skybox" data-function="skybox" data-env="parking_1k">
-    <img src="icon-skybox.png" alt="Skybox" data-function="skybox" data-env="studio_small_03_1k">
+    <img src="icon-skybox.png" alt="Skybox" data-function="skybox">
     <img src="icon-ar.png" alt="AR" data-function="ar">
     <img id="botaoRotacao" src="icon-rotate.png" alt="360" data-function="360">
   </div>
@@ -272,7 +250,7 @@
         }
       }, 5000);
 
-      // Menu interactions
+      // Menu interactions (original mantido)
       btnColors.addEventListener('click', function() {
         colorsMenu.classList.toggle('active');
         behaviorMenu.classList.remove('active');
@@ -291,12 +269,11 @@
         behaviorMenu.classList.remove('active');
       });
 
-      // Funções para os submenus
+      // Funções para os submenus (original mantido com pequenos ajustes)
       colorsMenu.addEventListener('click', function(e) {
         const color = e.target.getAttribute('data-color');
         if (color) {
           console.log('Alterando cor para:', color);
-          // Implementação original mantida
         }
       });
 
@@ -313,33 +290,19 @@
 
       setMenu.addEventListener('click', function(e) {
         const func = e.target.getAttribute('data-function');
-        const env = e.target.getAttribute('data-env');
         
-        if (env) {
-          // Novo sistema de ambientes HDRI
-          const envFile = `${env}.hdr`;
-          modelo2D.setAttribute('skybox-image', envFile);
-          modelo2D.setAttribute('environment-image', envFile);
-          
-          // Ajustes específicos por ambiente
-          if (env === 'industrial_workshop_1k') {
-            modelo2D.setAttribute('shadow-intensity', '1.5');
-            modelo2D.setAttribute('exposure', '1.2');
-          } else if (env === 'parking_1k') {
-            modelo2D.setAttribute('shadow-intensity', '1.2');
-            modelo2D.setAttribute('exposure', '1.0');
-          } else {
-            modelo2D.setAttribute('shadow-intensity', '1.0');
-            modelo2D.setAttribute('exposure', '0.9');
-          }
-        } 
-        else if (func === 'ar') {
+        if (func === 'skybox') {
+          // Usando apenas o WhiteStudio.hdr existente
+          modelo2D.setAttribute('skybox-image', 'WhiteStudio.hdr');
+          modelo2D.setAttribute('environment-image', 'WhiteStudio.hdr');
+          modelo2D.setAttribute('shadow-intensity', '1.2');
+          modelo2D.setAttribute('exposure', '1.1');
+        } else if (func === 'ar') {
           // AR com configuração melhorada
           modelo2D.activateAR();
           modelo2D.setAttribute('ar-scale', 'fixed');
           modelo2D.setAttribute('ar-placement', 'floor');
-        } 
-        else if (func === '360') {
+        } else if (func === '360') {
           // Rotação 360 melhorada
           const isRotating = modelo2D.hasAttribute('auto-rotate');
           if (isRotating) {
