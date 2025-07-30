@@ -208,7 +208,7 @@
         
         // Carrega o modelo
         let carModel;
-        BABYLON.SceneLoader.ImportMesh("", "https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/main/", "RAPTOR.glb", scene, 
+        BABYLON.SceneLoader.ImportMesh("RAPTOR.glb", scene, 
           function(meshes) {
             carModel = meshes[0];
             carModel.scaling = new BABYLON.Vector3(3, 3, 3);
