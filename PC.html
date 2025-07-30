@@ -1,162 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Product Configurator</title>
+  <title>Car Configurator</title>
   <meta charset="utf-8">
-  <meta name="description" content="Product Configurator">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.tailwindcss.com/3.2.0"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&display=swap" rel="stylesheet">
-  
   <!-- Babylon.js CDN -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
-  
+  <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
   <style>
-    body { 
-      font-family: 'Goldman', cursive;
+    body, html {
       margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
-      background-color: #f0f0f0;
     }
-
     #renderCanvas {
       width: 100%;
-      height: 100vh;
+      height: 100%;
       touch-action: none;
     }
-
-    /* Menu styles (same as before) */
-    .floating-menu {
-      position: fixed;
-      bottom: 1rem;
-      right: 4rem;
-      background-color: #141414b9;
-      padding: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
+    #loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
       display: flex;
+      justify-content: center;
       align-items: center;
-      backdrop-filter: blur(10px);
+      color: white;
+      font-family: Arial;
+      z-index: 1000;
     }
-    /* ... (keep all your original menu styles) ... */
+    /* Seus estilos de menu aqui (mantidos do original) */
   </style>
 </head>
 <body>
-  <!-- Loading overlay -->
-  <div id="loading" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; color:white; z-index:1000;">
-    <div>Carregando modelo 3D...</div>
-  </div>
-
-  <!-- Babylon.js Canvas -->
+  <div id="loading">Carregando cena 3D...</div>
   <canvas id="renderCanvas"></canvas>
 
-  <!-- Floating menu (same structure as before) -->
-  <div id="floatingMenu" class="floating-menu">
-    <img src="color-icon.png" alt="Colors" id="btnColors">
-    <img src="icon.png" alt="Behavior" id="btnBehavior">
-    <img src="set-icon.png" alt="Set" id="btnSet">
-  </div>
-
-  <!-- Submenus (same as before) -->
-  <div id="colorsMenu" class="submenu">
-    <!-- ... (your color options) ... -->
-  </div>
-  <!-- ... (other submenus) ... -->
+  <!-- Seus menus flutuantes aqui (mantidos do original) -->
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       const canvas = document.getElementById("renderCanvas");
       const loadingOverlay = document.getElementById("loading");
       
-      // Initialize Babylon.js engine
+      // Inicializa engine Babylon
       const engine = new BABYLON.Engine(canvas, true);
       
-      // Create scene
-      const createScene = function() {
+      // Cria cena com ambiente realista
+      const createScene = async function() {
         const scene = new BABYLON.Scene(engine);
-        scene.clearColor = new BABYLON.Color4(0.95, 0.95, 0.95, 1);
         
-        // Camera
-        const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 5, BABYLON.Vector3.Zero(), scene);
+        // Ambiente HDRI profissional para carros
+        const hdrTexture = new BABYLON.CubeTexture.CreateFromPrefilteredData(
+          "https://assets.babylonjs.com/environments/garageEnv.env", 
+          scene
+        );
+        scene.environmentTexture = hdrTexture;
+        scene.createDefaultSkybox(hdrTexture, true, 1000);
+        
+        // Câmera
+        const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/2, Math.PI/2.5, 5, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, true);
         camera.lowerRadiusLimit = 2;
-        camera.upperRadiusLimit = 10;
+        camera.upperRadiusLimit = 15;
+        camera.wheelPrecision = 50;
         
-        // Lights
-        const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
-        light1.intensity = 0.7;
-        const light2 = new BABYLON.DirectionalLight("light2", new BABYLON.Vector3(0, -0.5, -1.0), scene);
-        light2.intensity = 0.5;
+        // Luzes
+        const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0,1,0), scene);
+        light1.intensity = 0.5;
+        const light2 = new BABYLON.DirectionalLight("light2", new BABYLON.Vector3(0,-0.5,-1), scene);
+        light2.intensity = 0.8;
+        light2.shadowEnabled = true;
         
-        // Load model - USE YOUR DIRECT GLB PATH HERE
-        const modelPath = "RAPTOR.glb"; // or full URL if hosted elsewhere
-        BABYLON.SceneLoader.ImportMesh("", "", modelPath, scene, function(meshes) {
-          const carModel = meshes[0];
-          carModel.scaling = new BABYLON.Vector3(1, 1, 1); // Adjust scale as needed
+        // Carrega o modelo - SUBSTITUA PELA SUA URL
+        await BABYLON.SceneLoader.ImportMeshAsync(
+          "", 
+          "https://raw.githubusercontent.com/seu-usuario/seu-repo/main/", 
+          "RAPTOR.glb", 
+          scene,
+          undefined,
+          ".glb"
+        ).then(result => {
+          const carModel = result.meshes[0];
+          carModel.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
           
-          // Center camera on model
+          // Ajusta câmera
           camera.setTarget(carModel);
           const radius = carModel.getBoundingInfo().boundingSphere.radiusWorld;
           camera.radius = radius * 3;
           
           loadingOverlay.style.display = "none";
-        }, null, function(scene, message) {
-          console.error("Error loading model:", message);
-          loadingOverlay.innerHTML = "Erro ao carregar o modelo. Verifique o caminho do arquivo.";
+          
+          // Configura AR
+          setupAR(scene, carModel);
+        }).catch(err => {
+          console.error("Erro ao carregar modelo:", err);
+          loadingOverlay.innerHTML = "Erro ao carregar o modelo. Verifique o console.";
         });
         
         return scene;
       };
-
-      const scene = createScene();
       
-      // Handle window resize
-      window.addEventListener('resize', function() {
+      // Configuração AR
+      const setupAR = async (scene, model) => {
+        const xr = await scene.createDefaultXRExperienceAsync({
+          floorMeshes: [model],
+          disableDefaultUI: true
+        });
+        
+        // Botão AR
+        const arButton = document.createElement("button");
+        arButton.innerHTML = "VER EM AR";
+        arButton.style.position = "absolute";
+        arButton.style.top = "20px";
+        arButton.style.right = "20px";
+        arButton.style.padding = "10px 15px";
+        arButton.style.background = "white";
+        arButton.style.border = "none";
+        arButton.style.borderRadius = "5px";
+        arButton.style.cursor = "pointer";
+        arButton.style.zIndex = "100";
+        document.body.appendChild(arButton);
+        
+        arButton.onclick = () => {
+          xr.baseExperience.enterXRAsync("immersive-ar", "local-floor", {
+            ignoreNativeCameraConstraints: true,
+            disableWorldTracking: false
+          }).then(() => {
+            // Ajustes específicos para AR
+            model.scaling = new BABYLON.Vector3(1, 1, 1);
+            model.position = BABYLON.Vector3.Zero();
+          });
+        };
+      };
+      
+      const scene = await createScene();
+      
+      // Render loop
+      engine.runRenderLoop(() => {
+        scene.render();
+      });
+      
+      window.addEventListener("resize", () => {
         engine.resize();
       });
       
-      // Run render loop
-      engine.runRenderLoop(function() {
-        scene.render();
-      });
-
-      // Menu interactions (same as before)
-      const btnColors = document.getElementById("btnColors");
-      const btnBehavior = document.getElementById("btnBehavior");
-      const btnSet = document.getElementById("btnSet");
-      const colorsMenu = document.getElementById("colorsMenu");
-      const behaviorMenu = document.getElementById("behaviorMenu");
-      const setMenu = document.getElementById("setMenu");
-      
-      btnColors.addEventListener('click', function() {
-        colorsMenu.classList.toggle('active');
-        behaviorMenu.classList.remove('active');
-        setMenu.classList.remove('active');
-      });
-      
-      // ... (rest of your menu interaction code) ...
-      
-      // Rotation toggle
-      const botaoRotacao = document.getElementById("botaoRotacao");
-      let isRotating = false;
-      let rotationInterval;
-      
-      botaoRotacao.addEventListener('click', function() {
-        isRotating = !isRotating;
-        if (isRotating) {
-          botaoRotacao.style.opacity = '1';
-          rotationInterval = setInterval(() => {
-            scene.meshes[0].rotation.y += 0.01;
-          }, 16);
-        } else {
-          botaoRotacao.style.opacity = '0.6';
-          clearInterval(rotationInterval);
-        }
-      });
+      // Seus listeners de menu aqui (mantidos do original)
     });
   </script>
 </body>
