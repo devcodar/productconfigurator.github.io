@@ -10,12 +10,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.js"></script>
-  <script async src="https://ga.jspm.io/npm:es-module-shims@1.7.1/dist/es-module-shims.js"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer/dist/model-viewer-module.min.js"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer-effects/dist/model-viewer-effects.min.js"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@khronos/gltf-transform@0.14.2/lib/index.js"></script>
-  <link type="text/css" href="./styles.css" rel="stylesheet">
+  
+  <!-- Babylon.js CDN -->
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+  <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+  <script src="https://cdn.babylonjs.com/ammo.js"></script>
+  <script src="https://cdn.babylonjs.com/cannon.js"></script>
+  <script src="https://cdn.babylonjs.com/Oimo.js"></script>
+  <script src="https://cdn.babylonjs.com/earcut.min.js"></script>
+  <script src="https://cdn.babylonjs.com/babylon.gui.min.js"></script>
+  
   <style>
     body { 
       font-family: 'Goldman', cursive;
@@ -26,13 +31,13 @@
       justify-content: center;
       align-items: center;
       background-color: #f0f0f0;
+      overflow: hidden;
     }
 
-    model-viewer {
+    #renderCanvas {
       width: 100%;
       height: 100%;
-      --poster-color: transparent;
-      --progress-bar-color: transparent;
+      touch-action: none;
     }
 
     /* Estilos para o menu flutuante */
@@ -102,7 +107,7 @@
       font-size: 1.5rem;
     }
 
-    /* AR specific styles */
+    /* AR button */
     .ar-button {
       background-color: #fff;
       border-radius: 4px;
@@ -117,16 +122,11 @@
     }
 
     @media (max-width: 767px) {
-      /* Menu flutuante responsivo */
       .floating-menu {
         bottom: 1rem;
         right: 50%;
         transform: translateX(50%);
         padding: 0.5rem;
-      }
-
-      body{
-        overflow: hidden;
       }
 
       .floating-menu img {
@@ -149,39 +149,8 @@
     <div>Carregando modelo 3D...</div>
   </div>
 
-  <model-viewer 
-    id="modelo2D" 
-    src="RAPTOR.glb" 
-    ar 
-    ar-scale="fixed" 
-    ar-modes="webxr scene-viewer quick-look" 
-    camera-controls 
-    touch-action="pan-y" 
-    shadow-intensity="1.2" 
-    environment-image="WhiteStudio.hdr" 
-    exposure="1.1" 
-    shadow-softness="0.7" 
-    tone-mapping="neutral" 
-    skybox-image="WhiteStudio.hdr" 
-    skybox-height="2rem" 
-    max-camera-orbit="auto 90deg auto" 
-    min-camera-orbit="auto 15deg auto"
-    max-field-of-view="45deg"
-    min-field-of-view="15deg"
-    scale="1 1 1" 
-    ios-src="#" 
-    xr-environment
-    camera-orbit="0deg 75deg 105%"
-    camera-target="0m 0m 0m"
-    interaction-prompt="none"
-    ar-placement="floor"
-    quick-look-browsers="safari chrome"
-    ar-scale="3 3 3" <!-- Escala fixa 3:3 -->
-  >
-    <button class="ar-button" slot="ar-button">
-      Ver em AR
-    </button>
-  </model-viewer>
+  <!-- Babylon.js Canvas -->
+  <canvas id="renderCanvas"></canvas>
 
   <!-- Menu flutuante estilizado -->
   <div id="floatingMenu" class="floating-menu">
@@ -211,46 +180,68 @@
     <img id="botaoRotacao" src="icon-rotate.png" alt="360" data-function="360">
   </div>
 
-  <effect-composer id="customComposer" render-mode="performance">
-    <smaa-effect quality="high" blend-mode="DEFAULT" opacity="1"></smaa-effect>
-    <color-grade-effect brightness="0.0" contrast="0.2" saturation="0.2" smoothing="0.3" tonemapping="optimized_cineon" blend-mode="DEFAULT" opacity="1" hue="0.0, 2 * PI"></color-grade-effect>
-    <selective-bloom-effect strength="0.0" radius="0.8" threshold="1.0" smoothing="0.025"></selective-bloom-effect>
-    <ssao-effect></ssao-effect>
-  </effect-composer>
-  
-  <script src="rotacao.js"></script>
-  <script src="script.js"></script>
-  <script src="img.js"></script>
-  <script src="/modelo_moto/telacar.js"></script>
-  <script src="carvariantes.js"></script>
-  <script src="hostpost.js"></script>
-
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      const modelo2D = document.getElementById('modelo2D');
-      const btnColors = document.getElementById('btnColors');
-      const btnBehavior = document.getElementById('btnBehavior');
-      const btnSet = document.getElementById('btnSet');
-      const colorsMenu = document.getElementById('colorsMenu');
-      const behaviorMenu = document.getElementById('behaviorMenu');
-      const setMenu = document.getElementById('setMenu');
-      const loadingOverlay = document.getElementById('loading-overlay');
-      const botaoRotacao = document.getElementById('botaoRotacao');
-      const customComposer = document.getElementById('customComposer');
+      const canvas = document.getElementById("renderCanvas");
+      const loadingOverlay = document.getElementById("loading-overlay");
+      
+      // Inicializa o engine Babylon
+      const engine = new BABYLON.Engine(canvas, true);
+      
+      // Cria a cena
+      const createScene = function() {
+        const scene = new BABYLON.Scene(engine);
+        scene.clearColor = new BABYLON.Color4(0.95, 0.95, 0.95, 1);
+        
+        // Câmera
+        const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 5, BABYLON.Vector3.Zero(), scene);
+        camera.attachControl(canvas, true);
+        camera.lowerRadiusLimit = 2;
+        camera.upperRadiusLimit = 10;
+        camera.wheelDeltaPercentage = 0.01;
+        
+        // Luzes
+        const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+        light1.intensity = 0.7;
+        const light2 = new BABYLON.DirectionalLight("light2", new BABYLON.Vector3(0, -0.5, -1.0), scene);
+        light2.intensity = 0.5;
+        
+        // Carrega o modelo
+        let carModel;
+        BABYLON.SceneLoader.ImportMesh("", "https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/main/", "RAPTOR.glb", scene, 
+          function(meshes) {
+            carModel = meshes[0];
+            carModel.scaling = new BABYLON.Vector3(3, 3, 3);
+            loadingOverlay.style.display = "none";
+            
+            // Posiciona a câmera adequadamente
+            camera.setTarget(carModel);
+            camera.radius = carModel.getBoundingInfo().boundingBox.extendSize.length() * 3;
+          },
+          null,
+          function(scene, message) {
+            console.error("Error loading model:", message);
+            loadingOverlay.innerHTML = "<div>Erro ao carregar o modelo</div>";
+          }
+        );
+        
+        return { scene, camera, carModel };
+      };
 
-      // Esconder loading quando o modelo carregar
-      modelo2D.addEventListener('load', () => {
-        loadingOverlay.style.display = 'none';
-      });
+      const { scene, camera, carModel } = createScene();
+      
+      // Menu interactions
+      const btnColors = document.getElementById("btnColors");
+      const btnBehavior = document.getElementById("btnBehavior");
+      const btnSet = document.getElementById("btnSet");
+      const colorsMenu = document.getElementById("colorsMenu");
+      const behaviorMenu = document.getElementById("behaviorMenu");
+      const setMenu = document.getElementById("setMenu");
+      const botaoRotacao = document.getElementById("botaoRotacao");
+      
+      let isRotating = false;
+      let rotationInterval;
 
-      // Mostrar loading se demorar
-      setTimeout(() => {
-        if (loadingOverlay.style.display !== 'none') {
-          loadingOverlay.innerHTML = '<div>Carregando... Verifique sua conexão</div>';
-        }
-      }, 5000);
-
-      // Menu interactions (original mantido)
       btnColors.addEventListener('click', function() {
         colorsMenu.classList.toggle('active');
         behaviorMenu.classList.remove('active');
@@ -269,11 +260,12 @@
         behaviorMenu.classList.remove('active');
       });
 
-      // Funções para os submenus (original mantido com pequenos ajustes)
+      // Funções para os submenus
       colorsMenu.addEventListener('click', function(e) {
         const color = e.target.getAttribute('data-color');
-        if (color) {
+        if (color && carModel) {
           console.log('Alterando cor para:', color);
+          // Implementar mudança de cor aqui
         }
       });
 
@@ -290,32 +282,34 @@
 
       setMenu.addEventListener('click', function(e) {
         const func = e.target.getAttribute('data-function');
-        
         if (func === 'skybox') {
-          // Usando apenas o WhiteStudio.hdr existente
-          modelo2D.setAttribute('skybox-image', 'WhiteStudio.hdr');
-          modelo2D.setAttribute('environment-image', 'WhiteStudio.hdr');
-          modelo2D.setAttribute('shadow-intensity', '1.2');
-          modelo2D.setAttribute('exposure', '1.1');
+          console.log('Alterando skybox');
         } else if (func === 'ar') {
-          // AR com configuração melhorada
-          modelo2D.activateAR();
-          modelo2D.setAttribute('ar-scale', '3 3 3'); // Escala fixa 3:3
-          modelo2D.setAttribute('ar-placement', 'floor');
+          console.log('Ativando AR');
+          // Babylon WebXR
+          if (scene.isXRSupported()) {
+            const xr = scene.createDefaultXRExperienceAsync({
+              floorMeshes: [carModel]
+            });
+            xr.baseExperience.enterXRAsync("immersive-ar", "local-floor");
+          }
         } else if (func === '360') {
-          // Rotação 360 melhorada
-          const isRotating = modelo2D.hasAttribute('auto-rotate');
+          isRotating = !isRotating;
           if (isRotating) {
-            modelo2D.removeAttribute('auto-rotate');
-            botaoRotacao.style.opacity = '0.6';
-          } else {
-            modelo2D.setAttribute('auto-rotate', '');
             botaoRotacao.style.opacity = '1';
+            rotationInterval = setInterval(() => {
+              if (carModel) {
+                carModel.rotation.y += 0.01;
+              }
+            }, 16);
+          } else {
+            botaoRotacao.style.opacity = '0.6';
+            clearInterval(rotationInterval);
           }
         }
       });
 
-      // Variantes do modelo (código original mantido)
+      // Variantes do modelo
       const variantes = {
         varianteDefault: 'Default',
         varianteOrange: 'BLUE',
@@ -328,12 +322,13 @@
         if (element) {
           element.addEventListener('click', function() {
             const varianteNome = variantes[id];
-            modelo2D.variantName = varianteNome;
+            console.log('Variante selecionada:', varianteNome);
+            // Implementar mudança de variante aqui
           });
         }
       });
 
-      // Controles de animação (código original mantido)
+      // Controles de animação
       const btnOpenFrontDoor = document.getElementById('btnOpenFrontDoor');
       const btnOpenBackDoor = document.getElementById('btnOpenBackDoor');
       const btnOpenHood = document.getElementById('btnOpenHood');
@@ -343,37 +338,30 @@
     
       btnOpenFrontDoor.addEventListener('click', () => {
         frontDoorOpen = !frontDoorOpen;
-        modelo2D.animationName = 'Object_126Action.001';
-        modelo2D.play();
-        setTimeout(() => modelo2D.pause(), frontDoorOpen ? 1500 : 0);
+        console.log('Porta dianteira:', frontDoorOpen ? 'Aberta' : 'Fechada');
+        // Implementar animação aqui
       });
     
       btnOpenBackDoor.addEventListener('click', () => {
         backDoorOpen = !backDoorOpen;
-        modelo2D.animationName = 'Object_93Action.001';
-        modelo2D.play();
-        setTimeout(() => modelo2D.pause(), backDoorOpen ? 1500 : 0);
+        console.log('Porta traseira:', backDoorOpen ? 'Aberta' : 'Fechada');
+        // Implementar animação aqui
       });
     
       btnOpenHood.addEventListener('click', () => {
         hoodOpen = !hoodOpen;
-        modelo2D.animationName = 'Object_91Action.001';
-        modelo2D.play();
-        setTimeout(() => modelo2D.pause(), hoodOpen ? 1500 : 0);
+        console.log('Capô:', hoodOpen ? 'Aberto' : 'Fechado');
+        // Implementar animação aqui
       });
 
-      // AR Event Listeners
-      modelo2D.addEventListener('ar-status', (event) => {
-        if (event.detail.status === 'session-started') {
-          // Garante que o menu e efeitos permaneçam visíveis durante AR
-          document.getElementById('floatingMenu').style.display = 'flex';
-          customComposer.style.display = 'block';
-          
-          // Configurações específicas para AR
-          modelo2D.setAttribute('ar-scale', '3 3 3'); // Escala fixa 3:3
-          modelo2D.setAttribute('ar-placement', 'floor');
-          modelo2D.removeAttribute('auto-rotate'); // Remove rotação automática no AR
-        }
+      // Render loop
+      engine.runRenderLoop(function() {
+        scene.render();
+      });
+
+      // Resize
+      window.addEventListener('resize', function() {
+        engine.resize();
       });
     });
   </script>
