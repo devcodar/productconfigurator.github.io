@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>3D Car Configurator with EXR Environment</title>
+    <title>Advanced Car Configurator</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
@@ -35,28 +35,47 @@
             z-index: 1000;
         }
         .ar-button {
-            background-color: white;
-            border-radius: 4px;
-            border: none;
             position: absolute;
             top: 20px;
             right: 20px;
-            padding: 10px 15px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid white;
+            color: white;
+            border-radius: 4px;
             cursor: pointer;
             z-index: 999;
+            backdrop-filter: blur(5px);
+        }
+        .inspector-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 5px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            z-index: 999;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
-    <div id="loading">Loading 3D environment...</div>
+    <div id="loading">Initializing 3D environment...</div>
     <canvas id="renderCanvas"></canvas>
+    <button class="ar-button" id="arButton">VIEW IN AR</button>
+    <button class="inspector-button" id="inspectorButton">DEBUG</button>
 
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             const canvas = document.getElementById("renderCanvas");
             const loadingOverlay = document.getElementById("loading");
+            const arButton = document.getElementById("arButton");
+            const inspectorButton = document.getElementById("inspectorButton");
             
-            // Initialize Babylon.js engine
+            // Initialize engine
             const engine = new BABYLON.Engine(canvas, true);
             
             // Create scene
@@ -69,24 +88,15 @@
                 scene
             );
             scene.environmentTexture = envTexture;
+            scene.createDefaultSkybox(envTexture, true, 1000);
             
-            // Create skybox
-            const skybox = scene.createDefaultSkybox(envTexture, true, 1000);
-            skybox.renderingGroupId = 0;
-            
-            // Create ground plane
+            // Create invisible ground for AR (won't be visible in normal mode)
             const ground = BABYLON.MeshBuilder.CreateGround("ground", {
                 width: 100,
                 height: 100
             }, scene);
+            ground.isVisible = false; // Hidden in normal view
             ground.receiveShadows = true;
-            
-            // Ground material
-            const groundMat = new BABYLON.PBRMaterial("groundMat", scene);
-            groundMat.albedoColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-            groundMat.roughness = 0.8;
-            groundMat.metallic = 0.2;
-            ground.material = groundMat;
             
             // Lighting setup
             const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
@@ -97,63 +107,93 @@
             light2.shadowEnabled = true;
             
             // Shadow generator
-            const shadowGenerator = new BABYLON.ShadowGenerator(1024, light2);
+            const shadowGenerator = new BABYLON.ShadowGenerator(2048, light2);
             shadowGenerator.useBlurExponentialShadowMap = true;
-            shadowGenerator.blurKernel = 32;
+            shadowGenerator.blurKernel = 64;
             
-            // Load GLB model
+            // Load car model
+            let carModel;
             try {
                 const result = await BABYLON.SceneLoader.ImportMeshAsync(
                     "",
                     "",
-                    "RAPTOR.glb", // Replace with your GLB path
-                    scene,
-                    null,
-                    ".glb"
+                    "RAPTOR.glb", // Replace with your model path
+                    scene
                 );
                 
-                const carModel = result.meshes[0];
+                carModel = result.meshes[0];
+                
+                // Calculate proper ground projection
+                const boundingInfo = carModel.getHierarchyBoundingVectors();
+                const carHeight = boundingInfo.max.y - boundingInfo.min.y;
+                
+                // Position car exactly on ground
+                carModel.position.y = -boundingInfo.min.y;
                 carModel.scaling = new BABYLON.Vector3(1, 1, 1);
-                carModel.position.y = 0.5;
                 
                 // Enable shadows for all meshes
                 result.meshes.forEach(mesh => {
                     shadowGenerator.addShadowCaster(mesh);
+                    mesh.receiveShadows = true;
                 });
                 
-                // Center camera
-                const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/2, Math.PI/2.5, 10, carModel, scene);
+                // Camera setup
+                const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/2, Math.PI/3, carHeight * 2, carModel, scene);
                 camera.attachControl(canvas, true);
-                camera.lowerRadiusLimit = 3;
-                camera.upperRadiusLimit = 20;
-                
-                // Setup AR
-                const xr = await scene.createDefaultXRExperienceAsync({
-                    floorMeshes: [ground],
-                    disableDefaultUI: true
-                });
-                
-                // AR button
-                const arButton = document.createElement("button");
-                arButton.className = "ar-button";
-                arButton.textContent = "VIEW IN AR";
-                document.body.appendChild(arButton);
-                
-                arButton.addEventListener("click", async () => {
-                    try {
-                        await xr.baseExperience.enterXRAsync("immersive-ar", "local-floor");
-                        carModel.scaling = new BABYLON.Vector3(1, 1, 1);
-                    } catch (error) {
-                        console.error("AR error:", error);
-                    }
-                });
+                camera.lowerRadiusLimit = carHeight * 0.8;
+                camera.upperRadiusLimit = carHeight * 5;
+                camera.wheelPrecision = 30;
                 
                 loadingOverlay.style.display = "none";
                 
             } catch (error) {
                 console.error("Error loading model:", error);
-                loadingOverlay.innerHTML = "Error loading model. Check console for details.";
+                loadingOverlay.innerHTML = "Error loading model. Check console.";
+                return;
             }
+            
+            // AR Setup
+            let xrHelper;
+            arButton.addEventListener("click", async () => {
+                try {
+                    if (!xrHelper) {
+                        xrHelper = await scene.createDefaultXRExperienceAsync({
+                            floorMeshes: [ground],
+                            disableDefaultUI: true
+                        });
+                        
+                        // AR-specific adjustments
+                        xrHelper.baseExperience.onStateChangedObservable.add((state) => {
+                            if (state === BABYLON.WebXRState.IN_XR) {
+                                // Hide skybox in AR
+                                scene.skybox.setEnabled(false);
+                                // Scale model to real size
+                                carModel.scaling = new BABYLON.Vector3(1, 1, 1);
+                            } else {
+                                scene.skybox.setEnabled(true);
+                            }
+                        });
+                    }
+                    
+                    await xrHelper.baseExperience.enterXRAsync("immersive-ar", "local-floor");
+                    
+                } catch (error) {
+                    console.error("AR error:", error);
+                    alert("AR not available: " + error.message);
+                }
+            });
+            
+            // Inspector toggle
+            inspectorButton.addEventListener("click", () => {
+                if (scene.debugLayer.isVisible()) {
+                    scene.debugLayer.hide();
+                } else {
+                    scene.debugLayer.show({
+                        overlay: true,
+                        globalRoot: document.body
+                    });
+                }
+            });
             
             // Render loop
             engine.runRenderLoop(() => {
