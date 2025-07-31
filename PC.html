@@ -3,13 +3,16 @@
 <head>
   <title>Car Configurator</title>
   <meta charset="utf-8">
+  <meta name="description" content="Product Configurator">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.tailwindcss.com/3.2.0"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Goldman:wght@400;700&display=swap" rel="stylesheet">
   
-  <!-- Babylon.js CDN -->
+  <!-- Tailwind CSS CDN (mantido do original, mas sem arquivos de configuração locais) -->
+  <script src="https://cdn.tailwindcss.com/3.2.0"></script>
+
+  <!-- Babylon.js CDNs -->
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
   <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
@@ -47,9 +50,10 @@
     #loading p {
         margin-top: 10px;
         font-size: 1.2em;
+        text-align: center;
     }
     
-    /* Seus estilos originais de menu */
+    /* Estilos para o menu flutuante (mantidos do original) */
     .floating-menu {
       position: fixed;
       bottom: 1rem;
@@ -61,7 +65,7 @@
       z-index: 1000;
       display: flex;
       align-items: center;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px); /* Mantido do seu código anterior */
     }
 
     .floating-menu img {
@@ -86,7 +90,7 @@
       display: none;
       align-items: center;
       justify-content: center;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px); /* Mantido do seu código anterior */
     }
 
     .submenu img {
@@ -100,7 +104,7 @@
       display: flex;
     }
 
-    /* AR Button Style */
+    /* AR Button Style (mantido) */
     .ar-button {
       background-color: white;
       border-radius: 4px;
@@ -138,17 +142,18 @@
 <body>
   <div id="loading">
     <p>Carregando cena 3D...</p>
+    <p>Verifique o console (F12) para mensagens de erro ou progresso.</p>
   </div>
   <canvas id="renderCanvas"></canvas>
 
-  <!-- Menu flutuante estilizado -->
+  <!-- Menu flutuante estilizado (mantido do original) -->
   <div id="floatingMenu" class="floating-menu">
     <img src="color-icon.png" alt="Colors" id="btnColors">
     <img src="icon.png" alt="Behavior" id="btnBehavior">
     <img src="set-icon.png" alt="Set" id="btnSet">
   </div>
 
-  <!-- Submenus -->
+  <!-- Submenus (mantidos do original) -->
   <div id="colorsMenu" class="submenu">
     <img id="varianteDefault" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-08.png" alt="Black" data-color="black">
     <img id="varianteBlue" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-07.png" alt="Blue" data-color="blue">
@@ -307,7 +312,10 @@
         scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.05, 1); 
         
         const environmentPaths = {
-            "default": "goegap_4k.exr" // Seu arquivo local
+            "default": "goegap_4k.exr", // Seu arquivo local
+            "studio": "https://assets.babylonjs.com/environments/studio.env",
+            "country": "https://assets.babylonjs.com/environments/country.env",
+            "garage": "https://assets.babylonjs.com/environments/garageEnv.env"
         };
         let currentEnvironmentPath = environmentPaths.default;
 
@@ -332,6 +340,8 @@
                 currentEnvironmentPath = envPath;
             }, (error) => {
                 console.error("Erro ao carregar ambiente:", envPath, error);
+                loadingOverlay.innerHTML = `<p>Erro ao carregar ambiente: ${error.message || 'Verifique o console para detalhes.'}</p>`;
+                loadingOverlay.style.display = "flex";
             });
         };
 
@@ -374,13 +384,15 @@
             shadowGenerator.addShadowCaster(mesh);
 
             // Tentar identificar o material principal do corpo do carro
-            // Verifique o nome da mesh no seu GLB (ex: "car_body", "chassis", "main_paint")
-            if (mesh.name.toLowerCase().includes("body") || mesh.name.toLowerCase().includes("car_main") || mesh.name.toLowerCase().includes("car_paint")) {
-                if (!carBodyMaterial && mesh.material) { 
+            // VERIFIQUE O NOME DA MESH NO SEU GLB! (Ex: "car_body", "chassis", "main_paint", "Raptor_Body")
+            if (!carBodyMaterial && (mesh.name.toLowerCase().includes("body") || mesh.name.toLowerCase().includes("car_main") || mesh.name.toLowerCase().includes("car_paint") || mesh.name.toLowerCase().includes("raptor_body"))) {
+                if (mesh.material) { 
                     carBodyMaterial = mesh.material;
                     console.log("Material do corpo do carro encontrado:", carBodyMaterial.name);
                     // Define uma cor inicial padrão
                     changeCarColor('black'); 
+                } else {
+                    console.warn(`Mesh '${mesh.name}' identificada como corpo do carro, mas não tem material.`);
                 }
             } 
         };
@@ -397,6 +409,7 @@
 
             // Atribui os grupos de animação após o carregamento completo do modelo
             // VERIFIQUE SE ESTES NOMES DE ANIMAÇÃO ESTÃO CORRETOS NO SEU GLB!
+            // Use o Babylon.js Sandbox para verificar os nomes exatos dos AnimationGroups.
             frontDoorAnimGroup = scene.getAnimationGroup("Object_126Action.001");
             backDoorAnimGroup = scene.getAnimationGroup("Object_93Action.001");
             hoodAnimGroup = scene.getAnimationGroup("Object_91Action.001");
@@ -429,7 +442,7 @@
         try {
           const xr = await scene.createDefaultXRExperienceAsync({
             floorMeshes: [model], 
-            disableDefaultUI: true
+            disableDefaultUI: true // Mantém sua UI personalizada
           });
           
           const arButton = document.createElement("button");
@@ -450,7 +463,7 @@
           console.log("WebXR não suportado ou erro na inicialização:", xrError);
           const existingArButton = document.querySelector('.ar-button');
           if (existingArButton) {
-              existingArButton.style.display = 'none';
+              existingArButton.style.display = 'none'; // Oculta o botão AR se não for suportado
           }
         }
       };
@@ -473,52 +486,37 @@
               default: newColor = new BABYLON.Color3(0.5, 0.5, 0.5); break; 
           }
 
-          if (carBodyMaterial.albedoColor) { 
+          if (carBodyMaterial.albedoColor) { // Para PBRMaterial (geralmente usado em GLB)
               carBodyMaterial.albedoColor = newColor;
-          } else if (carBodyMaterial.diffuseColor) { 
+          } else if (carBodyMaterial.diffuseColor) { // Para StandardMaterial
               carBodyMaterial.diffuseColor = newColor;
           }
           console.log(`Cor do carro alterada para: ${colorName}`);
       };
 
       // Funções de animação de portas e capô usando AnimationGroups
-      const playAnimationToggle = (animGroup, isOpen, iconElement, openIcon, closeIcon) => {
+      const playAnimationToggle = (animGroup, isOpen) => {
           if (!animGroup) {
-              console.warn("Grupo de animação não encontrado.");
-              return isOpen; // Retorna o estado atual se a animação não puder ser executada
+              console.warn("Grupo de animação não encontrado para esta ação.");
+              return isOpen; 
           }
 
-          if (isOpen) { // Se está aberto, fechar
+          // Para animações de abrir/fechar, geralmente você quer que elas toquem uma vez
+          // e depois parem no estado final.
+          animGroup.stop(); // Garante que qualquer animação anterior pare
+
+          if (isOpen) { // Se está aberto, fechar (toca a animação ao contrário)
               animGroup.setDirection(BABYLON.AnimationGroup.ANIMATIONDIRECTION_BACKWARD);
               animGroup.play();
-              animGroup.onAnimationEndObservable.addOnce(() => {
-                  animGroup.stop();
-                  if (iconElement) iconElement.src = closeIcon;
-              });
-          } else { // Se está fechado, abrir
+              console.log("Animando para fechar.");
+          } else { // Se está fechado, abrir (toca a animação para frente)
               animGroup.setDirection(BABYLON.AnimationGroup.ANIMATIONDIRECTION_FORWARD);
               animGroup.play();
-              animGroup.onAnimationEndObservable.addOnce(() => {
-                  animGroup.stop();
-                  if (iconElement) iconElement.src = openIcon;
-              });
+              console.log("Animando para abrir.");
           }
           return !isOpen; // Inverte o estado
       };
 
-      // Referências aos elementos de imagem para trocar os ícones
-      const imgFrontDoor = document.getElementById('btnOpenFrontDoor').querySelector('img') || document.getElementById('btnOpenFrontDoor');
-      const imgBackDoor = document.getElementById('btnOpenBackDoor').querySelector('img') || document.getElementById('btnOpenBackDoor');
-      const imgHood = document.getElementById('btnOpenHood').querySelector('img') || document.getElementById('btnOpenHood');
-
-      // Ícones de exemplo (ajuste para seus próprios ícones se forem diferentes)
-      const iconDoorOpen = 'icon-door-open.png'; // Crie ou ajuste este ícone
-      const iconDoorClose = 'icon-door.png';
-      const iconHoodOpen = 'icon-hood-open.png'; // Crie ou ajuste este ícone
-      const iconHoodClose = 'icon-hood.png';
-      const iconTrunkOpen = 'car-trunk-icon-open.png'; // Crie ou ajuste este ícone
-      const iconTrunkClose = 'car-trunk-icon.png';
-      
       // Menu Interactions
       const btnColors = document.getElementById("btnColors");
       const btnBehavior = document.getElementById("btnBehavior");
@@ -573,15 +571,15 @@
       const btnOpenHood = document.getElementById('btnOpenHood');
       
       btnOpenFrontDoor.addEventListener('click', () => {
-        isFrontDoorOpen = playAnimationToggle(frontDoorAnimGroup, isFrontDoorOpen, imgFrontDoor, iconDoorOpen, iconDoorClose);
+        isFrontDoorOpen = playAnimationToggle(frontDoorAnimGroup, isFrontDoorOpen);
       });
       
       btnOpenBackDoor.addEventListener('click', () => {
-        isBackDoorOpen = playAnimationToggle(backDoorAnimGroup, isBackDoorOpen, imgBackDoor, iconTrunkOpen, iconTrunkClose);
+        isBackDoorOpen = playAnimationToggle(backDoorAnimGroup, isBackDoorOpen);
       });
       
       btnOpenHood.addEventListener('click', () => {
-        isHoodOpen = playAnimationToggle(hoodAnimGroup, isHoodOpen, imgHood, iconHoodOpen, iconHoodClose);
+        isHoodOpen = playAnimationToggle(hoodAnimGroup, isHoodOpen);
       });
       
       // Rotação 360 da câmera (usando autoRotationBehavior)
@@ -590,10 +588,11 @@
         camera.useAutoRotationBehavior = isRotating;
         if (isRotating) {
             botaoRotacao.style.opacity = '1';
+            console.log("Auto-rotação da câmera: Ativada");
         } else {
             botaoRotacao.style.opacity = '0.6';
+            console.log("Auto-rotação da câmera: Desativada");
         }
-        console.log("Auto-rotação da câmera:", isRotating ? "Ativada" : "Desativada");
       });
 
       // Skybox dinâmico (adicionar lógica para alternar ambientes)
@@ -613,6 +612,7 @@
       engine.runRenderLoop(() => {
         currentScene.render();
         // Atualiza a posição da câmera para o shader do ambiente a cada frame
+        // Isso é necessário para que a projeção do solo (se ativada no shader) funcione corretamente
         if (currentScene.activeCamera && currentScene.environmentTexture) {
             const envSphere = currentScene.getMeshByName("environmentSphere");
             if (envSphere && envSphere.material && envSphere.material.setVector3) {
