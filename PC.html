@@ -42,6 +42,11 @@
       align-items: center;
       color: white;
       z-index: 1000;
+      flex-direction: column;
+    }
+    #loading p {
+        margin-top: 10px;
+        font-size: 1.2em;
     }
     
     /* Seus estilos originais de menu */
@@ -131,10 +136,12 @@
   </style>
 </head>
 <body>
-  <div id="loading">Carregando cena 3D...</div>
+  <div id="loading">
+    <p>Carregando cena 3D...</p>
+  </div>
   <canvas id="renderCanvas"></canvas>
 
-  <!-- Menu flutuante -->
+  <!-- Menu flutuante estilizado -->
   <div id="floatingMenu" class="floating-menu">
     <img src="color-icon.png" alt="Colors" id="btnColors">
     <img src="icon.png" alt="Behavior" id="btnBehavior">
@@ -167,7 +174,11 @@
     let currentScene;
     let carTransformNode;
     let carBodyMaterial; // Referência ao material do corpo do carro
-    let frontDoorMesh, backDoorMesh, hoodMesh; // Referências para meshes de animação
+
+    // Referências para os AnimationGroups do modelo GLB
+    let frontDoorAnimGroup;
+    let backDoorAnimGroup; // Pode ser para porta traseira ou porta-malas
+    let hoodAnimGroup;
 
     let isFrontDoorOpen = false;
     let isBackDoorOpen = false;
@@ -257,13 +268,12 @@
                                                          { attributes: ["position", "normal", "uv"],
                                                            uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "uEnvMap", "uCameraPosition", "uUseGroundProjection"] });
       shaderMaterial.setTexture("uEnvMap", environmentTexture);
-      shaderMaterial.setVector3("uCameraPosition", scene.activeCamera.position);
       shaderMaterial.setInt("uUseGroundProjection", 0); 
       shaderMaterial.disableLighting = true;
       return shaderMaterial;
     }
 
-    function createEnvironment(environmentShaderMaterial, scene) {
+    function createEnvironmentMesh(environmentShaderMaterial, scene) {
       const sphere = BABYLON.MeshBuilder.CreateSphere("environmentSphere", {sideOrientation: BABYLON.Mesh.BACKSIDE, diameter: 1000}, scene);
       sphere.material = environmentShaderMaterial;
       sphere.isPickable = false;
@@ -293,39 +303,42 @@
       
       const createScene = async function() {
         const scene = new BABYLON.Scene(engine);
-        currentScene = scene; // Atribui a cena à variável global
+        currentScene = scene; 
         scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.05, 1); 
         
-        // Define os caminhos dos ambientes dinâmicos
         const environmentPaths = {
             "default": "goegap_4k.exr", // Seu arquivo local
             "studio": "https://assets.babylonjs.com/environments/studio.env",
-            "country": "https://assets.babylonjs.com/environments/country.env"
+            "country": "https://assets.babylonjs.com/environments/country.env",
+            "garage": "https://assets.babylonjs.com/environments/garageEnv.env"
         };
-        let currentEnvironment = environmentPaths.default;
+        let currentEnvironmentPath = environmentPaths.default;
 
-        // Função para carregar e aplicar o ambiente
         const loadEnvironment = (envPath) => {
-            const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(envPath, scene);
-            scene.environmentTexture = hdrTexture;
-            
-            // Atualiza o shader do ambiente
-            const environmentShaderMaterial = createEnvironmentShader(hdrTexture, scene);
-            // Remova o antigo skybox se existir
-            const oldSphere = scene.getMeshByName("environmentSphere");
-            if (oldSphere) {
-                oldSphere.dispose();
+            console.log("Carregando ambiente:", envPath);
+            if (scene.environmentTexture) {
+                scene.environmentTexture.dispose();
             }
-            createEnvironment(environmentShaderMaterial, scene);
-            // Certifica-se de que a câmera atualize o shader
-            scene.onBeforeRenderObservable.addOnce(() => {
-                environmentShaderMaterial.setVector3("uCameraPosition", scene.activeCamera.position);
+
+            const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(envPath, scene, () => {
+                console.log("Ambiente carregado com sucesso:", envPath);
+                scene.environmentTexture = hdrTexture;
+                scene.environmentIntensity = 1.0; 
+                
+                const environmentShaderMaterial = createEnvironmentShader(hdrTexture, scene);
+                const oldSphere = scene.getMeshByName("environmentSphere");
+                if (oldSphere) {
+                    oldSphere.dispose();
+                }
+                createEnvironmentMesh(environmentShaderMaterial, scene);
+                
+                currentEnvironmentPath = envPath;
+            }, (error) => {
+                console.error("Erro ao carregar ambiente:", envPath, error);
             });
-            currentEnvironment = envPath; // Atualiza o ambiente atual
         };
 
-        // Carrega o ambiente inicial
-        loadEnvironment(currentEnvironment);
+        loadEnvironment(currentEnvironmentPath);
 
         // Câmera
         const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/2, Math.PI/2.5, 5, BABYLON.Vector3.Zero(), scene);
@@ -336,7 +349,7 @@
         camera.panningSensibility = 500; 
         camera.angularSensibilityX = 2000; 
         camera.angularSensibilityY = 2000;
-        camera.useAutoRotationBehavior = true;
+        camera.useAutoRotationBehavior = false; // Começa desativado, ativado pelo botão 360
         camera.autoRotationBehavior.idleRotationSpeed = 0.1; 
         
         // Iluminação e Sombras
@@ -347,68 +360,75 @@
         carTransformNode = new BABYLON.TransformNode("carTransformNode", scene);
         carTransformNode.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5); 
         
-        // Carregar modelo usando SceneLoader.Append
+        console.log("Iniciando carregamento do modelo GLB: RAPTOR.glb");
         const loader = BABYLON.SceneLoader.Append(
           "", 
-          "RAPTOR.glb", // Certifique-se de que este caminho está correto
+          "RAPTOR.glb", 
           scene, 
           function (loadedScene) {
-            // Este callback é executado após o carregamento inicial da cena.
-            // As meshes individuais são processadas em onMeshLoaded.
+            console.log("Babylon.js SceneLoader.Append callback executado.");
           }
         );
 
         loader.onMeshLoaded = function(mesh) {
+            console.log(`Mesh carregada: ${mesh.name}`);
             mesh.parent = carTransformNode;
             mesh.receiveShadows = true;
             shadowGenerator.addShadowCaster(mesh);
 
-            // Tentar identificar as meshes do corpo, portas e capô
-            // Estes nomes são PALPITES. Você precisará verificar os nomes exatos no seu GLB.
-            if (mesh.name.toLowerCase().includes("body") || mesh.name.toLowerCase().includes("car_main")) {
-                carBodyMaterial = mesh.material;
-                if (carBodyMaterial && carBodyMaterial.albedoColor) {
+            // Tentar identificar o material principal do corpo do carro
+            // Verifique o nome da mesh no seu GLB (ex: "car_body", "chassis", "main_paint")
+            if (mesh.name.toLowerCase().includes("body") || mesh.name.toLowerCase().includes("car_main") || mesh.name.toLowerCase().includes("car_paint")) {
+                if (!carBodyMaterial && mesh.material) { 
+                    carBodyMaterial = mesh.material;
                     console.log("Material do corpo do carro encontrado:", carBodyMaterial.name);
+                    // Define uma cor inicial padrão
+                    changeCarColor('black'); 
                 }
-            } else if (mesh.name.toLowerCase().includes("door_front") && !frontDoorMesh) { // Ex: "door_front_left" ou "door_front_right"
-                // Se houver múltiplas portas dianteiras, pegue a primeira que encontrar
-                frontDoorMesh = mesh;
-                console.log("Porta dianteira encontrada:", mesh.name);
-            } else if (mesh.name.toLowerCase().includes("door_back") || mesh.name.toLowerCase().includes("trunk")) { // Ex: "door_back_left" ou "trunk"
-                // Pode ser a porta traseira ou o porta-malas
-                if (!backDoorMesh) { // Pega a primeira que encontrar
-                    backDoorMesh = mesh; 
-                    console.log("Porta traseira/porta-malas encontrada:", mesh.name);
-                }
-            } else if (mesh.name.toLowerCase().includes("hood")) {
-                hoodMesh = mesh;
-                console.log("Capô encontrado:", mesh.name);
-            }
+            } 
         };
 
         loader.onLoadObservable.add(() => {
+            console.log("Modelo GLB carregado completamente!");
             if (carTransformNode) {
                 camera.setTarget(carTransformNode);
                 const radius = carTransformNode.getBoundingInfo().boundingSphere.radiusWorld;
                 camera.radius = radius * 3; 
+            } else {
+                console.warn("carTransformNode não encontrado após o carregamento do modelo.");
             }
+
+            // Atribui os grupos de animação após o carregamento completo do modelo
+            // VERIFIQUE SE ESTES NOMES DE ANIMAÇÃO ESTÃO CORRETOS NO SEU GLB!
+            frontDoorAnimGroup = scene.getAnimationGroup("Object_126Action.001");
+            backDoorAnimGroup = scene.getAnimationGroup("Object_93Action.001");
+            hoodAnimGroup = scene.getAnimationGroup("Object_91Action.001");
+
+            if (!frontDoorAnimGroup) console.warn("AnimationGroup 'Object_126Action.001' (Porta Dianteira) não encontrado.");
+            if (!backDoorAnimGroup) console.warn("AnimationGroup 'Object_93Action.001' (Porta Traseira) não encontrado.");
+            if (!hoodAnimGroup) console.warn("AnimationGroup 'Object_91Action.001' (Capô) não encontrado.");
+
             loadingOverlay.style.display = "none";
             setupAR(scene, carTransformNode); 
         });
 
         loader.onErrorObservable.add((error) => {
-            console.error("Error loading model:", error.message, error.exception);
-            loadingOverlay.innerHTML = "Erro ao carregar modelo. Verifique o console.";
+            console.error("Erro ao carregar modelo GLB:", error.message, error.exception);
+            loadingOverlay.innerHTML = `<p>Erro ao carregar modelo: ${error.message || 'Verifique o console para detalhes.'}</p>`;
+            loadingOverlay.style.display = "flex"; 
         });
 
-        // Pipeline de Renderização Padrão
         var pipeline = new BABYLON.DefaultRenderingPipeline("defaultPipeline", true, scene, [camera]);
 
-        return { scene, carModel: carTransformNode, loadEnvironment, environmentPaths };
+        return { scene, carModel: carTransformNode, loadEnvironment, environmentPaths, camera };
       };
       
-      // AR Setup (mantido)
+      // AR Setup (mantido do seu código original, adaptado para o TransformNode)
       const setupAR = async (scene, model) => {
+        if (!model) {
+            console.warn("Modelo não disponível para AR. Carregamento falhou ou TransformNode está vazio.");
+            return;
+        }
         try {
           const xr = await scene.createDefaultXRExperienceAsync({
             floorMeshes: [model], 
@@ -423,111 +443,85 @@
           arButton.addEventListener("click", async () => {
             try {
               await xr.baseExperience.enterXRAsync("immersive-ar", "local-floor");
+              console.log("Entrou no modo AR.");
             } catch (arError) {
-              console.error("AR Error:", arError);
-              alert("AR não disponível: " + arError.message);
+              console.error("Erro ao entrar no AR:", arError);
+              alert("AR não disponível: " + arError.message + ". Certifique-se de estar em um dispositivo compatível com WebXR e em HTTPS.");
             }
           });
         } catch (xrError) {
           console.log("WebXR não suportado ou erro na inicialização:", xrError);
+          const existingArButton = document.querySelector('.ar-button');
+          if (existingArButton) {
+              existingArButton.style.display = 'none';
+          }
         }
       };
       
-      const { scene, carModel, loadEnvironment, environmentPaths } = await createScene();
+      const { scene, carModel, loadEnvironment, environmentPaths, camera } = await createScene();
       
       // Funções de alteração de cor
       const changeCarColor = (colorName) => {
           if (!carBodyMaterial) {
-              console.warn("Material do corpo do carro não encontrado para alteração de cor. Verifique o nome da mesh.");
+              console.warn("Material do corpo do carro não encontrado para alteração de cor. Verifique o nome da mesh no seu GLB.");
               return;
           }
 
           let newColor;
           switch(colorName) {
-              case 'black': newColor = new BABYLON.Color3(0.1, 0.1, 0.1); break;
-              case 'blue': newColor = new BABYLON.Color3(0, 0, 1); break;
-              case 'green': newColor = new BABYLON.Color3(0, 1, 0); break;
-              case 'red': newColor = new BABYLON.Color3(1, 0, 0); break;
-              default: newColor = new BABYLON.Color3(0.5, 0.5, 0.5); break; // Default grey
+              case 'black': newColor = new BABYLON.Color3(0.05, 0.05, 0.05); break;
+              case 'blue': newColor = new BABYLON.Color3(0.0, 0.0, 0.8); break;
+              case 'green': newColor = new BABYLON.Color3(0.0, 0.6, 0.0); break;
+              case 'red': newColor = new BABYLON.Color3(0.8, 0.0, 0.0); break;
+              default: newColor = new BABYLON.Color3(0.5, 0.5, 0.5); break; 
           }
 
-          if (carBodyMaterial.albedoColor) { // Para PBRMaterial (geralmente usado em GLB)
+          if (carBodyMaterial.albedoColor) { 
               carBodyMaterial.albedoColor = newColor;
-          } else if (carBodyMaterial.diffuseColor) { // Para StandardMaterial
+          } else if (carBodyMaterial.diffuseColor) { 
               carBodyMaterial.diffuseColor = newColor;
           }
           console.log(`Cor do carro alterada para: ${colorName}`);
       };
 
-      // Funções de animação de portas e capô
-      const animateMeshRotation = (mesh, property, targetValue, duration, onComplete) => {
-          if (!mesh) {
-              console.warn("Mesh para animação não encontrada.");
-              return;
+      // Funções de animação de portas e capô usando AnimationGroups
+      const playAnimationToggle = (animGroup, isOpen, iconElement, openIcon, closeIcon) => {
+          if (!animGroup) {
+              console.warn("Grupo de animação não encontrado.");
+              return isOpen; // Retorna o estado atual se a animação não puder ser executada
           }
 
-          const animation = new BABYLON.Animation(
-              "meshAnimation", 
-              property, // Ex: "rotation.y" ou "rotation.x"
-              60, // Quadros por segundo (FPS)
-              BABYLON.Animation.ANIMATIONTYPE_FLOAT, // Tipo de animação: float para um único valor
-              BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
-          );
-
-          const keys = [];
-          keys.push({ frame: 0, value: mesh.rotation[property.split('.')[1]] }); // Valor inicial
-          keys.push({ frame: duration, value: targetValue }); // Valor final
-
-          animation.setKeys(keys);
-
-          // Inicia a animação. `true` para loop, `1` para velocidade.
-          scene.beginDirectAnimation(mesh, [animation], 0, duration, false, 1, onComplete);
-      };
-
-      const openCloseFrontDoor = () => {
-          if (!frontDoorMesh) {
-              console.warn("Mesh da porta dianteira não encontrada. Verifique o nome da mesh no seu GLB.");
-              return;
+          if (isOpen) { // Se está aberto, fechar
+              animGroup.setDirection(BABYLON.AnimationGroup.ANIMATIONDIRECTION_BACKWARD);
+              animGroup.play();
+              animGroup.onAnimationEndObservable.addOnce(() => {
+                  animGroup.stop();
+                  if (iconElement) iconElement.src = closeIcon;
+              });
+          } else { // Se está fechado, abrir
+              animGroup.setDirection(BABYLON.AnimationGroup.ANIMATIONDIRECTION_FORWARD);
+              animGroup.play();
+              animGroup.onAnimationEndObservable.addOnce(() => {
+                  animGroup.stop();
+                  if (iconElement) iconElement.src = openIcon;
+              });
           }
-          // Exemplo: rotação no eixo Y. Ajuste o ângulo e o eixo conforme seu modelo.
-          // Um lado pode girar positivo, o outro negativo.
-          const targetAngle = isFrontDoorOpen ? 0 : Math.PI / 2; // Abre 90 graus
-          
-          animateMeshRotation(frontDoorMesh, "rotation.y", targetAngle, 60, () => { // Duração de 60 frames = 1 segundo
-              isFrontDoorOpen = !isFrontDoorOpen;
-              console.log("Porta dianteira:", isFrontDoorOpen ? "Aberta" : "Fechada");
-          });
+          return !isOpen; // Inverte o estado
       };
 
-      const openCloseBackDoor = () => {
-          if (!backDoorMesh) {
-              console.warn("Mesh da porta traseira/porta-malas não encontrada. Verifique o nome da mesh no seu GLB.");
-              return;
-          }
-          // Exemplo: rotação no eixo Y (para porta) ou X (para porta-malas).
-          const targetAngle = isBackDoorOpen ? 0 : -Math.PI / 2; // Abre -90 graus
-          
-          animateMeshRotation(backDoorMesh, "rotation.y", targetAngle, 60, () => {
-              isBackDoorOpen = !isBackDoorOpen;
-              console.log("Porta traseira/porta-malas:", isBackDoorOpen ? "Aberta" : "Fechada");
-          });
-      };
+      // Referências aos elementos de imagem para trocar os ícones
+      const imgFrontDoor = document.getElementById('btnOpenFrontDoor').querySelector('img') || document.getElementById('btnOpenFrontDoor');
+      const imgBackDoor = document.getElementById('btnOpenBackDoor').querySelector('img') || document.getElementById('btnOpenBackDoor');
+      const imgHood = document.getElementById('btnOpenHood').querySelector('img') || document.getElementById('btnOpenHood');
 
-      const openCloseHood = () => {
-          if (!hoodMesh) {
-              console.warn("Mesh do capô não encontrada. Verifique o nome da mesh no seu GLB.");
-              return;
-          }
-          // Exemplo: rotação no eixo X.
-          const targetAngle = isHoodOpen ? 0 : Math.PI / 4; // Abre 45 graus
-          
-          animateMeshRotation(hoodMesh, "rotation.x", targetAngle, 60, () => {
-              isHoodOpen = !isHoodOpen;
-              console.log("Capô:", isHoodOpen ? "Aberto" : "Fechado");
-          });
-      };
-
-
+      // Ícones de exemplo (ajuste para seus próprios ícones se forem diferentes)
+      const iconDoorOpen = 'icon-door-open.png'; // Crie ou ajuste este ícone
+      const iconDoorClose = 'icon-door.png';
+      const iconHoodOpen = 'icon-hood-open.png'; // Crie ou ajuste este ícone
+      const iconHoodClose = 'icon-hood.png';
+      const iconTrunkOpen = 'car-trunk-icon-open.png'; // Crie ou ajuste este ícone
+      const iconTrunkClose = 'car-trunk-icon.png';
+      
       // Menu Interactions
       const btnColors = document.getElementById("btnColors");
       const btnBehavior = document.getElementById("btnBehavior");
@@ -535,11 +529,10 @@
       const colorsMenu = document.getElementById("colorsMenu");
       const behaviorMenu = document.getElementById("behaviorMenu");
       const setMenu = document.getElementById("setMenu");
-      const botaoRotacao = document.getElementById("botaoRotacao");
-      
-      let isRotating = false;
-      let rotationInterval;
-      
+      const botaoRotacao = document.getElementById("botaoRotacao"); // Botão 360
+
+      let isRotating = false; // Controla o estado de rotação da câmera
+
       // Toggle menus
       btnColors.addEventListener('click', function() {
         colorsMenu.classList.toggle('active');
@@ -559,9 +552,9 @@
         behaviorMenu.classList.remove('active');
       });
       
-      // Color variants (ajustado para chamar a função de mudança de cor)
+      // Color variants 
       const variantes = {
-        varianteDefault: 'black',
+        varianteDefault: 'black', 
         varianteBlue: 'blue',
         varianteOrange: 'green',
         varianteRed: 'red',
@@ -577,37 +570,33 @@
         }
       });
       
-      // Behavior controls (ajustado para chamar as funções de animação)
+      // Behavior controls 
       const btnOpenFrontDoor = document.getElementById('btnOpenFrontDoor');
       const btnOpenBackDoor = document.getElementById('btnOpenBackDoor');
       const btnOpenHood = document.getElementById('btnOpenHood');
       
       btnOpenFrontDoor.addEventListener('click', () => {
-        openCloseFrontDoor();
+        isFrontDoorOpen = playAnimationToggle(frontDoorAnimGroup, isFrontDoorOpen, imgFrontDoor, iconDoorOpen, iconDoorClose);
       });
       
       btnOpenBackDoor.addEventListener('click', () => {
-        openCloseBackDoor();
+        isBackDoorOpen = playAnimationToggle(backDoorAnimGroup, isBackDoorOpen, imgBackDoor, iconTrunkOpen, iconTrunkClose);
       });
       
       btnOpenHood.addEventListener('click', () => {
-        openCloseHood();
+        isHoodOpen = playAnimationToggle(hoodAnimGroup, isHoodOpen, imgHood, iconHoodOpen, iconHoodClose);
       });
       
-      // Rotation toggle
+      // Rotação 360 da câmera (usando autoRotationBehavior)
       botaoRotacao.addEventListener('click', function() {
         isRotating = !isRotating;
-        if (carModel) { 
-          if (isRotating) {
+        camera.useAutoRotationBehavior = isRotating;
+        if (isRotating) {
             botaoRotacao.style.opacity = '1';
-            rotationInterval = setInterval(() => {
-              carModel.rotation.y += 0.01;
-            }, 16);
-          } else {
+        } else {
             botaoRotacao.style.opacity = '0.6';
-            clearInterval(rotationInterval);
-          }
         }
+        console.log("Auto-rotação da câmera:", isRotating ? "Ativada" : "Desativada");
       });
 
       // Skybox dinâmico (adicionar lógica para alternar ambientes)
@@ -625,7 +614,14 @@
       
       // Render loop
       engine.runRenderLoop(() => {
-        scene.render();
+        currentScene.render();
+        // Atualiza a posição da câmera para o shader do ambiente a cada frame
+        if (currentScene.activeCamera && currentScene.environmentTexture) {
+            const envSphere = currentScene.getMeshByName("environmentSphere");
+            if (envSphere && envSphere.material && envSphere.material.setVector3) {
+                envSphere.material.setVector3("uCameraPosition", currentScene.activeCamera.position);
+            }
+        }
       });
       
       window.addEventListener("resize", () => {
