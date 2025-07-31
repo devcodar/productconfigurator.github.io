@@ -13,6 +13,8 @@
   <script src="https://cdn.babylonjs.com/babylon.js"></script>
   <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
   <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+  <script src="https://cdn.babylonjs.com/postProcesses/babylonjs.postProcess.min.js"></script>
+  <script src="https://cdn.babylonjs.com/core/babylon.defaultRenderingPipeline.js"></script>
 
   <style>
     body, html {
@@ -141,8 +143,8 @@
 
   <!-- Submenus -->
   <div id="colorsMenu" class="submenu">
-    <img id="varianteDefault" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-08.png" alt="Blue" data-color="blue">
-    <img id="varianteBlue" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-07.png" alt="Yellow" data-color="yellow">
+    <img id="varianteDefault" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-08.png" alt="Black" data-color="black">
+    <img id="varianteBlue" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-07.png" alt="Blue" data-color="blue">
     <img id="varianteOrange" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-11.png" alt="Green" data-color="green">
     <img id="varianteRed" src="https://raw.githubusercontent.com/devcodar/productconfigurator.github.io/gh-pages/CORES-10.png" alt="Red" data-color="red">
   </div>
@@ -161,80 +163,258 @@
   </div>
 
   <script>
+    // Variáveis globais para acesso fácil
+    let currentScene;
+    let carTransformNode;
+    let carBodyMaterial; // Referência ao material do corpo do carro
+    let frontDoorMesh, backDoorMesh, hoodMesh; // Referências para meshes de animação
+
+    let isFrontDoorOpen = false;
+    let isBackDoorOpen = false;
+    let isHoodOpen = false;
+
+    // Funções de ambiente e iluminação baseadas no código de exemplo
+    function createEnvironmentShader(environmentTexture, scene) {
+      BABYLON.Effect.ShadersStore["customVertexShader"] = 
+        "precision highp float;\\r\\n"+
+        "attribute vec3 position;\\r\\n"+
+        "uniform mat4 world;\\r\\n"+
+        "uniform mat4 worldView;\\r\\n"+
+        "uniform mat4 projection;\\r\\n"+
+        "varying vec3 vPosition;\\r\\n"+
+        "void main()\\r\\n"+
+        "{\\r\\n" +
+        "    vec4 worldPosition = world * vec4( position, 1.0 );\\r\\n"+
+        "    vPosition          = worldPosition.xyz;\\r\\n"+
+        "    gl_Position        = projection * worldView * vec4( position, 1.0 );\\r\\n"+
+        "}\\r\\n";
+
+      BABYLON.Effect.ShadersStore["customFragmentShader"]=
+        "precision highp float;\\r\\n"+
+        "#define PI 3.14159265359\\r\\n"+
+        "uniform mat4 worldView;\\r\\n"+
+        "varying vec3 vPosition;\\r\\n"+
+        "uniform samplerCube uEnvMap;\\r\\n"+
+        "uniform vec3 uCameraPosition;\\r\\n"+
+        "uniform bool uUseGroundProjection;\\r\\n"+
+        "float diskIntersectBackfaceCulling( in vec3 ro, in vec3 rd, vec3 c, vec3 n, float r )\\r\\n"+
+        "{\\r\\n"+
+        "    float d = dot(rd,n);\\r\\n"+
+        "    if( d>0.0 ) return -1.0;\\r\\n"+
+        "        vec3  o = ro - c;\\r\\n"+
+        "    float t = -dot(n,o)/d;\\r\\n"+
+        "    vec3  q = o + rd*t;\\r\\n"+
+        "    return (dot(q,q)<r*r) ? t : -1.0;\\r\\n"+
+        "}\\r\\n"+
+        "float sphereIntersect( in vec3 ro, in vec3 rd, in vec3 ce, float ra )\\r\\n"+
+        "{\\r\\n"+
+        "    vec3 oc = ro - ce;\\r\\n"+
+        "    float b = dot( oc, rd );\\r\\n"+
+        "    float c = dot( oc, oc ) - ra*ra;\\r\\n"+
+        "    float h = b * b - c;\\r\\n"+
+        "    if(h < 0.0)\\r\\n"+
+        "    {\\r\\n"+
+        "        return -1.0;\\r\\n"+
+        "    }\\r\\n"+
+        "    h = sqrt( h );\\r\\n"+
+        "    return -b + h;\\r\\n"+
+        "}\\r\\n"+
+        "vec3 project()\\r\\n"+
+        "{\\r\\n"+
+        "    float height = 100.0;\\r\\n"+
+        "    float radius = 750.0;\\r\\n"+
+        "    \\r\\n"+
+        "    vec3 position       = normalize( vPosition.xyz );\\r\\n"+
+        "    vec3 cameraPosition = uCameraPosition;\\r\\n"+
+        "    cameraPosition.y   -= height;\\r\\n"+
+        "    \\r\\n"+
+        "    float intersection = sphereIntersect( cameraPosition, position, vec3(0.0), radius );\\r\\n"+
+        "    if( intersection > 0.0 )\\r\\n"+
+        "    {\\r\\n"+
+        "        vec3 h              = vec3( 0.0, -height, 0.0 );\\r\\n"+
+        "        float intersection2 = diskIntersectBackfaceCulling( cameraPosition, position, h, vec3(0.0,1.0,0.0), radius );\\r\\n"+
+        "        if( uUseGroundProjection && intersection2 > 0.0 )"+
+        "            position = (cameraPosition + min(intersection, intersection2) * position) / radius;\\r\\n"+
+        "        else\\r\\n"+
+        "            position = (cameraPosition + intersection * position) / radius;\\r\\n"+
+        "    }\\r\\n"+
+        "    else\\r\\n"+
+        "    {\\r\\n"+
+        "        position = vec3( 0.0, 1.0, 0.0 );\\r\\n"+
+        "    }\\r\\n"+
+        "    \\r\\n"+
+        "    return position;\\r\\n"+
+        "}\\r\\n"+
+        "void main(void) {\\r\\n"+
+        "    vec3 projectedPosition = project();\\r\\n"+
+        "    \\r\\n"+
+        "    vec3 color       = textureLod( uEnvMap, projectedPosition, 0.0 ).rgb;\\r\\n"+
+        "    gl_FragColor = vec4( color, 1.0 );\\r\\n"+
+        "}\\r\\n";
+
+      const shaderMaterial = new BABYLON.ShaderMaterial("environmentShader", scene, 
+                                                         { vertex: "custom", fragment: "custom" },
+                                                         { attributes: ["position", "normal", "uv"],
+                                                           uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "uEnvMap", "uCameraPosition", "uUseGroundProjection"] });
+      shaderMaterial.setTexture("uEnvMap", environmentTexture);
+      shaderMaterial.setVector3("uCameraPosition", scene.activeCamera.position);
+      shaderMaterial.setInt("uUseGroundProjection", 0); 
+      shaderMaterial.disableLighting = true;
+      return shaderMaterial;
+    }
+
+    function createEnvironment(environmentShaderMaterial, scene) {
+      const sphere = BABYLON.MeshBuilder.CreateSphere("environmentSphere", {sideOrientation: BABYLON.Mesh.BACKSIDE, diameter: 1000}, scene);
+      sphere.material = environmentShaderMaterial;
+      sphere.isPickable = false;
+    }
+
+    function createLight(scene) {
+      const light = new BABYLON.DirectionalLight("light0", new BABYLON.Vector3(-800, -1400, -1000), scene);
+      light.intensity = 0.8; 
+      light.shadowMinZ = 1800;
+      light.shadowMaxZ = 2100;
+      return light;
+    }
+
+    function createShadowGenerator(light) {
+      const shadowGenerator = new BABYLON.ShadowGenerator(1024, light); 
+      shadowGenerator.setDarkness(0.5); 
+      shadowGenerator.useContactHardeningShadow = true;
+      shadowGenerator.contactHardeningLightSizeUVRatio = 0.025;
+      return shadowGenerator;
+    }
+
     document.addEventListener('DOMContentLoaded', async function() {
       const canvas = document.getElementById("renderCanvas");
       const loadingOverlay = document.getElementById("loading");
       
-      // Initialize engine
       const engine = new BABYLON.Engine(canvas, true);
       
-      // Create scene with environment
       const createScene = async function() {
         const scene = new BABYLON.Scene(engine);
-        scene.clearColor = new BABYLON.Color4(0.95, 0.95, 0.95, 1);
+        currentScene = scene; // Atribui a cena à variável global
+        scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.05, 1); 
         
-        // Environment Texture - Using garage environment
-        const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
-          "https://assets.babylonjs.com/environments/garageEnv.env", 
-          scene
-        );
-        scene.environmentTexture = hdrTexture;
-        scene.createDefaultSkybox(hdrTexture, true, 1000);
-        
-        // Camera
+        // Define os caminhos dos ambientes dinâmicos
+        const environmentPaths = {
+            "default": "goegap_4k.exr", // Seu arquivo local
+            "studio": "https://assets.babylonjs.com/environments/studio.env",
+            "country": "https://assets.babylonjs.com/environments/country.env"
+        };
+        let currentEnvironment = environmentPaths.default;
+
+        // Função para carregar e aplicar o ambiente
+        const loadEnvironment = (envPath) => {
+            const hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(envPath, scene);
+            scene.environmentTexture = hdrTexture;
+            
+            // Atualiza o shader do ambiente
+            const environmentShaderMaterial = createEnvironmentShader(hdrTexture, scene);
+            // Remova o antigo skybox se existir
+            const oldSphere = scene.getMeshByName("environmentSphere");
+            if (oldSphere) {
+                oldSphere.dispose();
+            }
+            createEnvironment(environmentShaderMaterial, scene);
+            // Certifica-se de que a câmera atualize o shader
+            scene.onBeforeRenderObservable.addOnce(() => {
+                environmentShaderMaterial.setVector3("uCameraPosition", scene.activeCamera.position);
+            });
+            currentEnvironment = envPath; // Atualiza o ambiente atual
+        };
+
+        // Carrega o ambiente inicial
+        loadEnvironment(currentEnvironment);
+
+        // Câmera
         const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI/2, Math.PI/2.5, 5, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, true);
         camera.lowerRadiusLimit = 2;
         camera.upperRadiusLimit = 15;
         camera.wheelPrecision = 50;
+        camera.panningSensibility = 500; 
+        camera.angularSensibilityX = 2000; 
+        camera.angularSensibilityY = 2000;
+        camera.useAutoRotationBehavior = true;
+        camera.autoRotationBehavior.idleRotationSpeed = 0.1; 
         
-        // Lights
-        const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0,1,0), scene);
-        light1.intensity = 0.5;
-        const light2 = new BABYLON.DirectionalLight("light2", new BABYLON.Vector3(0,-0.5,-1), scene);
-        light2.intensity = 0.8;
-        light2.shadowEnabled = true;
+        // Iluminação e Sombras
+        const light = createLight(scene);
+        const shadowGenerator = createShadowGenerator(light);
         
-        // Load model - UPDATE THIS PATH
-        try {
-          const result = await BABYLON.SceneLoader.ImportMeshAsync(
-            "", 
-            "", 
-            "RAPTOR.glb", 
-            scene
-          );
-          
-          const carModel = result.meshes[0];
-          carModel.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
-          
-          // Center camera
-          camera.setTarget(carModel);
-          const radius = carModel.getBoundingInfo().boundingSphere.radiusWorld;
-          camera.radius = radius * 3;
-          
-          loadingOverlay.style.display = "none";
-          
-          // Setup AR
-          setupAR(scene, carModel);
-          
-          // Return both scene and car model for menu interactions
-          return { scene, carModel };
-        } catch (err) {
-          console.error("Error loading model:", err);
-          loadingOverlay.innerHTML = "Erro ao carregar modelo. Verifique o console.";
-          return { scene, carModel: null };
-        }
+        // TransformNode para o modelo do carro
+        carTransformNode = new BABYLON.TransformNode("carTransformNode", scene);
+        carTransformNode.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5); 
+        
+        // Carregar modelo usando SceneLoader.Append
+        const loader = BABYLON.SceneLoader.Append(
+          "", 
+          "RAPTOR.glb", // Certifique-se de que este caminho está correto
+          scene, 
+          function (loadedScene) {
+            // Este callback é executado após o carregamento inicial da cena.
+            // As meshes individuais são processadas em onMeshLoaded.
+          }
+        );
+
+        loader.onMeshLoaded = function(mesh) {
+            mesh.parent = carTransformNode;
+            mesh.receiveShadows = true;
+            shadowGenerator.addShadowCaster(mesh);
+
+            // Tentar identificar as meshes do corpo, portas e capô
+            // Estes nomes são PALPITES. Você precisará verificar os nomes exatos no seu GLB.
+            if (mesh.name.toLowerCase().includes("body") || mesh.name.toLowerCase().includes("car_main")) {
+                carBodyMaterial = mesh.material;
+                if (carBodyMaterial && carBodyMaterial.albedoColor) {
+                    console.log("Material do corpo do carro encontrado:", carBodyMaterial.name);
+                }
+            } else if (mesh.name.toLowerCase().includes("door_front") && !frontDoorMesh) { // Ex: "door_front_left" ou "door_front_right"
+                // Se houver múltiplas portas dianteiras, pegue a primeira que encontrar
+                frontDoorMesh = mesh;
+                console.log("Porta dianteira encontrada:", mesh.name);
+            } else if (mesh.name.toLowerCase().includes("door_back") || mesh.name.toLowerCase().includes("trunk")) { // Ex: "door_back_left" ou "trunk"
+                // Pode ser a porta traseira ou o porta-malas
+                if (!backDoorMesh) { // Pega a primeira que encontrar
+                    backDoorMesh = mesh; 
+                    console.log("Porta traseira/porta-malas encontrada:", mesh.name);
+                }
+            } else if (mesh.name.toLowerCase().includes("hood")) {
+                hoodMesh = mesh;
+                console.log("Capô encontrado:", mesh.name);
+            }
+        };
+
+        loader.onLoadObservable.add(() => {
+            if (carTransformNode) {
+                camera.setTarget(carTransformNode);
+                const radius = carTransformNode.getBoundingInfo().boundingSphere.radiusWorld;
+                camera.radius = radius * 3; 
+            }
+            loadingOverlay.style.display = "none";
+            setupAR(scene, carTransformNode); 
+        });
+
+        loader.onErrorObservable.add((error) => {
+            console.error("Error loading model:", error.message, error.exception);
+            loadingOverlay.innerHTML = "Erro ao carregar modelo. Verifique o console.";
+        });
+
+        // Pipeline de Renderização Padrão
+        var pipeline = new BABYLON.DefaultRenderingPipeline("defaultPipeline", true, scene, [camera]);
+
+        return { scene, carModel: carTransformNode, loadEnvironment, environmentPaths };
       };
       
-      // AR Setup
+      // AR Setup (mantido)
       const setupAR = async (scene, model) => {
         try {
           const xr = await scene.createDefaultXRExperienceAsync({
-            floorMeshes: [model],
+            floorMeshes: [model], 
             disableDefaultUI: true
           });
           
-          // Create AR Button
           const arButton = document.createElement("button");
           arButton.className = "ar-button";
           arButton.textContent = "VER EM AR";
@@ -243,21 +423,112 @@
           arButton.addEventListener("click", async () => {
             try {
               await xr.baseExperience.enterXRAsync("immersive-ar", "local-floor");
-              model.scaling = new BABYLON.Vector3(1, 1, 1);
             } catch (arError) {
               console.error("AR Error:", arError);
               alert("AR não disponível: " + arError.message);
             }
           });
         } catch (xrError) {
-          console.log("WebXR não suportado:", xrError);
+          console.log("WebXR não suportado ou erro na inicialização:", xrError);
         }
       };
       
-      // Create scene and get references
-      const { scene, carModel } = await createScene();
+      const { scene, carModel, loadEnvironment, environmentPaths } = await createScene();
       
-      // Menu Interactions - RESTORED ORIGINAL LOGIC
+      // Funções de alteração de cor
+      const changeCarColor = (colorName) => {
+          if (!carBodyMaterial) {
+              console.warn("Material do corpo do carro não encontrado para alteração de cor. Verifique o nome da mesh.");
+              return;
+          }
+
+          let newColor;
+          switch(colorName) {
+              case 'black': newColor = new BABYLON.Color3(0.1, 0.1, 0.1); break;
+              case 'blue': newColor = new BABYLON.Color3(0, 0, 1); break;
+              case 'green': newColor = new BABYLON.Color3(0, 1, 0); break;
+              case 'red': newColor = new BABYLON.Color3(1, 0, 0); break;
+              default: newColor = new BABYLON.Color3(0.5, 0.5, 0.5); break; // Default grey
+          }
+
+          if (carBodyMaterial.albedoColor) { // Para PBRMaterial (geralmente usado em GLB)
+              carBodyMaterial.albedoColor = newColor;
+          } else if (carBodyMaterial.diffuseColor) { // Para StandardMaterial
+              carBodyMaterial.diffuseColor = newColor;
+          }
+          console.log(`Cor do carro alterada para: ${colorName}`);
+      };
+
+      // Funções de animação de portas e capô
+      const animateMeshRotation = (mesh, property, targetValue, duration, onComplete) => {
+          if (!mesh) {
+              console.warn("Mesh para animação não encontrada.");
+              return;
+          }
+
+          const animation = new BABYLON.Animation(
+              "meshAnimation", 
+              property, // Ex: "rotation.y" ou "rotation.x"
+              60, // Quadros por segundo (FPS)
+              BABYLON.Animation.ANIMATIONTYPE_FLOAT, // Tipo de animação: float para um único valor
+              BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+          );
+
+          const keys = [];
+          keys.push({ frame: 0, value: mesh.rotation[property.split('.')[1]] }); // Valor inicial
+          keys.push({ frame: duration, value: targetValue }); // Valor final
+
+          animation.setKeys(keys);
+
+          // Inicia a animação. `true` para loop, `1` para velocidade.
+          scene.beginDirectAnimation(mesh, [animation], 0, duration, false, 1, onComplete);
+      };
+
+      const openCloseFrontDoor = () => {
+          if (!frontDoorMesh) {
+              console.warn("Mesh da porta dianteira não encontrada. Verifique o nome da mesh no seu GLB.");
+              return;
+          }
+          // Exemplo: rotação no eixo Y. Ajuste o ângulo e o eixo conforme seu modelo.
+          // Um lado pode girar positivo, o outro negativo.
+          const targetAngle = isFrontDoorOpen ? 0 : Math.PI / 2; // Abre 90 graus
+          
+          animateMeshRotation(frontDoorMesh, "rotation.y", targetAngle, 60, () => { // Duração de 60 frames = 1 segundo
+              isFrontDoorOpen = !isFrontDoorOpen;
+              console.log("Porta dianteira:", isFrontDoorOpen ? "Aberta" : "Fechada");
+          });
+      };
+
+      const openCloseBackDoor = () => {
+          if (!backDoorMesh) {
+              console.warn("Mesh da porta traseira/porta-malas não encontrada. Verifique o nome da mesh no seu GLB.");
+              return;
+          }
+          // Exemplo: rotação no eixo Y (para porta) ou X (para porta-malas).
+          const targetAngle = isBackDoorOpen ? 0 : -Math.PI / 2; // Abre -90 graus
+          
+          animateMeshRotation(backDoorMesh, "rotation.y", targetAngle, 60, () => {
+              isBackDoorOpen = !isBackDoorOpen;
+              console.log("Porta traseira/porta-malas:", isBackDoorOpen ? "Aberta" : "Fechada");
+          });
+      };
+
+      const openCloseHood = () => {
+          if (!hoodMesh) {
+              console.warn("Mesh do capô não encontrada. Verifique o nome da mesh no seu GLB.");
+              return;
+          }
+          // Exemplo: rotação no eixo X.
+          const targetAngle = isHoodOpen ? 0 : Math.PI / 4; // Abre 45 graus
+          
+          animateMeshRotation(hoodMesh, "rotation.x", targetAngle, 60, () => {
+              isHoodOpen = !isHoodOpen;
+              console.log("Capô:", isHoodOpen ? "Aberto" : "Fechado");
+          });
+      };
+
+
+      // Menu Interactions
       const btnColors = document.getElementById("btnColors");
       const btnBehavior = document.getElementById("btnBehavior");
       const btnSet = document.getElementById("btnSet");
@@ -288,12 +559,12 @@
         behaviorMenu.classList.remove('active');
       });
       
-      // Color variants
+      // Color variants (ajustado para chamar a função de mudança de cor)
       const variantes = {
-        varianteDefault: 'Default',
-        varianteOrange: 'BLUE',
-        varianteRed: 'ORANGE',
-        varianteBlue:'RED',
+        varianteDefault: 'black',
+        varianteBlue: 'blue',
+        varianteOrange: 'green',
+        varianteRed: 'red',
       };
       
       Object.keys(variantes).forEach(id => {
@@ -301,36 +572,32 @@
         if (element) {
           element.addEventListener('click', function() {
             const varianteNome = variantes[id];
-            console.log('Variante selecionada:', varianteNome);
-            // Implement color change here
+            changeCarColor(varianteNome);
           });
         }
       });
       
-      // Behavior controls
+      // Behavior controls (ajustado para chamar as funções de animação)
       const btnOpenFrontDoor = document.getElementById('btnOpenFrontDoor');
       const btnOpenBackDoor = document.getElementById('btnOpenBackDoor');
       const btnOpenHood = document.getElementById('btnOpenHood');
       
       btnOpenFrontDoor.addEventListener('click', () => {
-        console.log('Abrir porta dianteira');
-        // Implement door animation
+        openCloseFrontDoor();
       });
       
       btnOpenBackDoor.addEventListener('click', () => {
-        console.log('Abrir porta traseira');
-        // Implement door animation
+        openCloseBackDoor();
       });
       
       btnOpenHood.addEventListener('click', () => {
-        console.log('Abrir capô');
-        // Implement hood animation
+        openCloseHood();
       });
       
       // Rotation toggle
       botaoRotacao.addEventListener('click', function() {
         isRotating = !isRotating;
-        if (carModel) {
+        if (carModel) { 
           if (isRotating) {
             botaoRotacao.style.opacity = '1';
             rotationInterval = setInterval(() => {
@@ -342,6 +609,19 @@
           }
         }
       });
+
+      // Skybox dinâmico (adicionar lógica para alternar ambientes)
+      const btnSkybox = document.querySelector('#setMenu img[data-function="skybox"]');
+      if (btnSkybox) {
+        let currentEnvIndex = 0;
+        const envKeys = Object.keys(environmentPaths);
+        btnSkybox.addEventListener('click', () => {
+            currentEnvIndex = (currentEnvIndex + 1) % envKeys.length;
+            const nextEnvPath = environmentPaths[envKeys[currentEnvIndex]];
+            loadEnvironment(nextEnvPath);
+            console.log("Ambiente alterado para:", nextEnvPath);
+        });
+      }
       
       // Render loop
       engine.runRenderLoop(() => {
