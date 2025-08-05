@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Ford 3D Vehicle Configurator</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    
+    <!-- Loading BabylonJS libraries -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <script src="https://cdn.babylonjs.com/materials/babylonjs.materials.min.js"></script>
+    <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+    
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            outline: none;
+            display: block;
+        }
+
+        #loadingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-content {
+            text-align: center;
+            max-width: 300px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Main Interface */
+        .main-interface {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Header with logo and info */
+        .header-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .ford-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .vehicle-info {
+            color: rgba(255,255,255,0.9);
+            text-align: right;
+            font-size: 14px;
+        }
+
+        /* Main AR Button - Centered */
+        .ar-main-container {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .ar-main-button {
+            width: 120px;
+            height: 120px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff3838 0%, #ff6b6b 50%, #ff9999 100%);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(255, 56, 56, 0.4);
+            animation: arPulse 2s infinite ease-in-out;
+        }
+
+        .ar-main-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 40px rgba(255, 56, 56, 0.6);
+            animation: none;
+        }
+
+        .ar-main-button:active {
+            transform: scale(0.95);
+        }
+
+        .ar-main-button.active {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 50%, #66bb6a 100%);
+            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.6);
+        }
+
+        .ar-icon {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+
+        .ar-text {
+            font-size: 12px;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+
+        @keyframes arPulse {
+            0%, 100% {
+                box-shadow: 0 8px 32px rgba(255, 56, 56, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 32px rgba(255, 56, 56, 0.8);
+            }
+        }
+
+        .ar-description {
+            margin-top: 15px;
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+            max-width: 200px;
+            line-height: 1.4;
+        }
+
+        /* Side tools menu */
+        .tools-menu {
+            position: absolute;
+            top: 50%;
+            right: 30px;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        .tool-button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .tool-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-5px);
+        }
+
+        .tool-button.active {
+            background: rgba(76, 175, 80, 0.8);
+        }
+
+        /* AR Status */
+        .ar-status {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: none;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .ar-status.active {
+            display: flex;
+            animation: slideDown 0.5s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .ar-status-icon {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4CAF50;
+            font-size: 12px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            right: 65px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .tool-button:hover .tooltip {
+            opacity: 1;
+        }
+
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .header-bar {
+                padding: 15px 20px;
+            }
+
+            .ford-logo {
+                font-size: 20px;
+            }
+
+            .vehicle-info {
+                font-size: 12px;
+            }
+
+            .ar-main-button {
+                width: 100px;
+                height: 100px;
+                font-size: 20px;
+            }
+
+            .ar-icon {
+                font-size: 24px;
+            }
+
+            .tools-menu {
+                right: 20px;
+                padding: 12px;
+            }
+
+            .tool-button {
+                width: 45px;
+                height: 45px;
+                font-size: 14px;
+            }
+
+            .ar-description {
+                font-size: 12px;
+                max-width: 180px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ar-main-container {
+                bottom: 30px;
+            }
+
+            .ar-main-button {
+                width: 90px;
+                height: 90px;
+                font-size: 18px;
+            }
+
+            .tools-menu {
+                right: 15px;
+                flex-direction: row;
+                top: auto;
+                bottom: 160px;
+                transform: none;
+            }
+
+            .tool-button {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        .error-screen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .retry-btn {
+            padding: 12px 24px;
+            background: #4CAF50;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .retry-btn:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <div id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>Loading 3D Experience</h2>
+            <p>Preparing your Ford vehicle...</p>
+        </div>
+    </div>
+
+    <!-- Main Interface -->
+    <div class="main-interface">
+        <!-- Header -->
+        <div class="header-bar">
+            <div class="ford-logo">CAMPO</div>
+            <div class="vehicle-info">
+                <div>Campo GLB</div>
+                <div style="opacity: 0.7;">3D Configurator</div>
+            </div>
+        </div>
+
+        <!-- AR Status -->
+        <div class="ar-status" id="arStatus">
+            <div class="ar-status-icon">✓</div>
+            <span>AR Mode Active - Real Scale 1:1</span>
+        </div>
+
+        <!-- Main AR Button -->
+        <div class="ar-main-container">
+            <button id="arMainBtn" class="ar-main-button" title="Activate Augmented Reality">
+                <div class="ar-icon">📱</div>
+                <div class="ar-text">AR</div>
+            </button>
+            <div class="ar-description">
+                Tap to view the vehicle in Augmented Reality in the real world
+            </div>
+        </div>
+
+        <!-- Tools Menu -->
+        <div class="tools-menu">
+            <button id="inspectBtn" class="tool-button" title="Scene Inspector">
+                <span>🔍</span>
+                <div class="tooltip">Inspector</div>
+            </button>
+            <button id="resetBtn" class="tool-button" title="Reset Camera">
+                <span>🔄</span>
+                <div class="tooltip">Reset Camera</div>
+            </button>
+            <button id="fullscreenBtn" class="tool-button" title="Fullscreen">
+                <span>⛶</span>
+                <div class="tooltip">Fullscreen</div>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class FordVehicleConfigurator {
+            constructor() {
+                this.scene = null;
+                this.engine = null;
+                this.camera = null;
+                this.car = null;
+                this.garage = null;
+                this.shadowGenerator = null;
+                this.xrHelper = null;
+                this.canvas = document.getElementById("renderCanvas");
+                this.loadingScreen = document.getElementById("loadingScreen");
+                this.arStatus = document.getElementById("arStatus");
+                this.arMainBtn = document.getElementById("arMainBtn");
+                this.headlights = [];
+                this.isARMode = false;
+                this.originalCameraPosition = null;
+                
+                this.init();
+            }
+
+            async init() {
+                try {
+                    await this.setupEngine();
+                    await this.createScene();
+                    await this.setupCamera();
+                    await this.setupLighting();
+                    await this.loadAssets();
+                    await this.setupXR();
+                    this.setupControls();
+                    this.startRenderLoop();
+                    this.hideLoading();
+                } catch (error) {
+                    this.showError(error);
+                }
+            }
+
+            setupEngine() {
+                const engineOptions = {
+                    antialias: true,
+                    powerPreference: "high-performance",
+                    preserveDrawingBuffer: true,
+                    stencil: true,
+                    premultipliedAlpha: false
+                };
+
+                this.engine = new BABYLON.Engine(this.canvas, true, engineOptions);
+                this.engine.setHardwareScalingLevel(window.devicePixelRatio > 1 ? 0.8 : 1);
+                
+                return Promise.resolve();
+            }
+
+            createScene() {
+                this.scene = new BABYLON.Scene(this.engine);
+                
+                this.scene.shadowsEnabled = true;
+                this.scene.particlesEnabled = true;
+                this.scene.texturesEnabled = true;
+                this.scene.collisionsEnabled = true;
+                this.scene.gravity = new BABYLON.Vector3(0, -9.81, 0);
+                
+                this.scene.fogEnabled = true;
+                this.scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
+                this.scene.fogColor = new BABYLON.Color3(0.9, 0.9, 0.85);
+                this.scene.fogDensity = 0.001;
+
+                return Promise.resolve();
+            }
+
+            setupCamera() {
+                this.camera = new BABYLON.ArcRotateCamera(
+                    "camera",
+                    -Math.PI / 2,
+                    Math.PI / 3,
+                    25,
+                    new BABYLON.Vector3(0, 2, 0),
+                    this.scene
+                );
+
+                this.camera.attachControl(this.canvas, true);
+                
+                this.camera.lowerRadiusLimit = 8;
+                this.camera.upperRadiusLimit = 50;
+                this.camera.lowerBetaLimit = 0.1;
+                this.camera.upperBetaLimit = Math.PI / 2.1;
+                
+                this.camera.wheelPrecision = 20;
+                this.camera.pinchPrecision = 30;
+                this.camera.panningSensibility = 100;
+                this.camera.angularSensibilityX = 1000;
+                this.camera.angularSensibilityY = 1000;
+
+                this.camera.inertia = 0.8;
+                this.camera.panningInertia = 0.8;
+
+                // Save original camera position
+                this.originalCameraPosition = {
+                    alpha: this.camera.alpha,
+                    beta: this.camera.beta,
+                    radius: this.camera.radius,
+                    target: this.camera.target.clone()
+                };
+
+                return Promise.resolve();
+            }
+
+            setupLighting() {
+                // Soft ambient light
+                const hemisphericLight = new BABYLON.HemisphericLight(
+                    "hemisphericLight",
+                    new BABYLON.Vector3(0, 1, 0),
+                    this.scene
+                );
+                hemisphericLight.intensity = 0.3;
+                hemisphericLight.diffuse = new BABYLON.Color3(0.8, 0.9, 1);
+
+                // Main directional light (sun) - enhanced for better shadows
+                const directionalLight = new BABYLON.DirectionalLight(
+                    "directionalLight",
+                    new BABYLON.Vector3(-0.5, -1, -0.5),
+                    this.scene
+                );
+                directionalLight.intensity = 2.0; // Increased for more visible shadows
+                directionalLight.position = new BABYLON.Vector3(50, 50, 50);
+                directionalLight.diffuse = new BABYLON.Color3(1, 0.95, 0.8);
+                
+                // Optimized shadow configuration
+                directionalLight.shadowMinZ = 0.1;
+                directionalLight.shadowMaxZ = 200;
+                
+                // High-quality shadows
+                this.shadowGenerator = new BABYLON.ShadowGenerator(4096, directionalLight); // Increased resolution
+                this.shadowGenerator.useBlurExponentialShadowMap = true;
+                this.shadowGenerator.blurKernel = 32;
+                this.shadowGenerator.bias = 0.000001;
+                this.shadowGenerator.normalBias = 0.02;
+
+                // Fill light
+                const fillLight = new BABYLON.SpotLight(
+                    "fillLight",
+                    new BABYLON.Vector3(-20, 15, 10),
+                    new BABYLON.Vector3(1, -0.5, -0.5),
+                    Math.PI / 3,
+                    2,
+                    this.scene
+                );
+                fillLight.intensity = 0.4;
+                fillLight.diffuse = new BABYLON.Color3(0.9, 0.95, 1);
+
+                return Promise.resolve();
+            }
+
+            async loadAssets() {
+                try {
+                    const envTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
+                        "goegap_road_4k.env",
+                        this.scene
+                    );
+                    this.scene.environmentTexture = envTexture;
+                    this.scene.createDefaultSkybox(envTexture, true, 1000);
+                    this.scene.environmentIntensity = 0.5;
+
+                    const carResult = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "",
+                        "./",
+                        "Campo.glb",
+                        this.scene
+                    );
+
+                    this.car = carResult.meshes[0];
+                    
+                    this.car.position = new BABYLON.Vector3(-0.0, -0.76, -18.92);
+                    this.car.rotation = new BABYLON.Vector3(0, -900, 0);
+                    this.car.scaling = new BABYLON.Vector3(10, 10, 10);
+
+                    this.car.checkCollisions = true;
+                    this.car.ellipsoid = new BABYLON.Vector3(2, 1, 4);
+
+                    // Add all car parts to cast shadows
+                    carResult.meshes.forEach(mesh => {
+                        if (mesh && mesh.name !== "__root__") {
+                            this.shadowGenerator.addShadowCaster(mesh);
+                            console.log(`Shadow added for: ${mesh.name}`);
+                        }
+                    });
+
+                    const garageResult = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "",
+                        "./",
+                        "road__avenue__street.glb",
+                        this.scene
+                    );
+
+                    this.garage = garageResult.meshes[0];
+                    this.garage.position = new BABYLON.Vector3(0, -0.5, 0);
+                    this.garage.scaling = new BABYLON.Vector3(0.5, 0.5, 0.5);
+                    this.garage.receiveShadows = true;
+                    this.garage.checkCollisions = true;
+
+                    // Ensure all ground parts receive shadows
+                    garageResult.meshes.forEach(mesh => {
+                        if (mesh && mesh.name !== "__root__") {
+                            mesh.receiveShadows = true;
+                        }
+                    });
+
+                    await this.enhanceMaterials();
+                    this.applyTintedGlassEffects();
+                    this.applyHeadlightEffects();
+
+                } catch (error) {
+                    console.warn("Error loading some resources:", error);
+                    this.createFallbackScene();
+                }
+            }
+
+            async enhanceMaterials() {
+                // Apply basic PBR materials for realism (without chrome effects)
+                this.scene.meshes.forEach(mesh => {
+                    if (mesh.material && mesh.material.name) {
+                        if (mesh.material.name.includes("car") || mesh.material.name.includes("vehicle")) {
+                            // Basic metallic material for the car
+                            mesh.material.metallicFactor = 0.9;
+                            mesh.material.roughnessFactor = 0.1;
+                            mesh.material.baseColor = new BABYLON.Color3(0.2, 0.3, 0.8);
+                        } else if (mesh.material.name.includes("road") || mesh.material.name.includes("ground")) {
+                            // Ground material
+                            mesh.material.roughnessFactor = 0.8;
+                            mesh.material.metallicFactor = 0.1;
+                        }
+                    }
+                });
+            }
+
+            // Function for tinted glass (smoke effect)
+            applyTintedGlassEffects() {
+                const glassNames = ["Plane.004", "Plane.002", "Plane.001"];
+                
+                glassNames.forEach(glassName => {
+                    const glassMesh = this.scene.getMeshByName(glassName);
+                    if (glassMesh) {
+                        // Create tinted/smoke glass material
+                        const tintedGlassMaterial = new BABYLON.PBRMaterial(glassName + "_tinted_glass", this.scene);
+                        
+                        // Darkened color for smoke effect
+                        tintedGlassMaterial.baseColor = new BABYLON.Color3(0.2, 0.25, 0.3); // Dark tone
+                        tintedGlassMaterial.metallicFactor = 0.1;
+                        tintedGlassMaterial.roughnessFactor = 0.05; // Slightly rough for realism
+                        
+                        // Transparency that allows seeing the interior
+                        tintedGlassMaterial.alpha = 0.3; // More opaque than normal glass, but still transparent
+                        
+                        // Refraction and transmission properties
+                        tintedGlassMaterial.indexOfRefraction = 1.5; // Automotive glass refraction index
+                        tintedGlassMaterial.transmissionFactor = 0.7; // Reduced transmission for smoke effect
+                        tintedGlassMaterial.thickness = 0.3; // Increased thickness
+                        
+                        // Subsurface configurations
+                        tintedGlassMaterial.subSurface.isRefractionEnabled = true;
+                        tintedGlassMaterial.subSurface.indexOfRefraction = 1.5;
+                        tintedGlassMaterial.subSurface.thickness = 0.3;
+                        tintedGlassMaterial.subSurface.tintColor = new BABYLON.Color3(0.15, 0.2, 0.25);
+                        
+                        // Reflection to maintain environment reflections
+                        tintedGlassMaterial.clearCoat.isEnabled = true;
+                        tintedGlassMaterial.clearCoat.intensity = 0.8; // Strong reflection
+                        tintedGlassMaterial.clearCoat.roughness = 0.05;
+                        
+                        // Render both sides
+                        tintedGlassMaterial.backFaceCulling = false;
+                        
+                        // Apply the material
+                        glassMesh.material = tintedGlassMaterial;
+                        
+                        console.log(`Tinted glass applied to: ${glassName}`);
+                    } else {
+                        console.warn(`Glass mesh not found: ${glassName}`);
+                    }
+                });
+            }
+
+            applyHeadlightEffects() {
+                const headlightNames = ["#61457", "#65358"];
+                
+                headlightNames.forEach(headlightName => {
+                    const headlightMesh = this.scene.getMeshByName(headlightName);
+                    if (headlightMesh) {
+                        const headlightMaterial = new BABYLON.PBRMaterial(headlightName + "_light", this.scene);
+                        
+                        headlightMaterial.emissiveColor = new BABYLON.Color3(1, 1, 0.8);
+                        headlightMaterial.emissiveIntensity = 2.0;
+                        headlightMaterial.baseColor = new BABYLON.Color3(0.9, 0.9, 0.7);
+                        headlightMaterial.metallicFactor = 0.1;
+                        headlightMaterial.roughnessFactor = 0.3;
+                        
+                        headlightMesh.material = headlightMaterial;
+                        
+                        const spotlight = new BABYLON.SpotLight(
+                            headlightName + "_spotlight",
+                            headlightMesh.position.clone(),
+                            new BABYLON.Vector3(0, 0, 1),
+                            Math.PI / 6,
+                            2,
+                            this.scene
+                        );
+                        spotlight.intensity = 50;
+                        spotlight.diffuse = new BABYLON.Color3(1, 1, 0.8);
+                        spotlight.range = 100;
+                        
+                        spotlight.parent = headlightMesh;
+                        
+                        this.headlights.push({
+                            mesh: headlightMesh,
+                            light: spotlight
+                        });
+                    }
+                });
+            }
+
+            createFallbackScene() {
+                const carBox = BABYLON.MeshBuilder.CreateBox("fallbackCar", {size: 4}, this.scene);
+                carBox.position = new BABYLON.Vector3(0, 2, 0);
+                
+                const carMaterial = new BABYLON.PBRMaterial("carMaterial", this.scene);
+                carMaterial.baseColor = new BABYLON.Color3(0.2, 0.3, 0.8);
+                carMaterial.metallicFactor = 0.9;
+                carMaterial.roughnessFactor = 0.1;
+                carBox.material = carMaterial;
+
+                const ground = BABYLON.MeshBuilder.CreateGround("fallbackGround", {width: 50, height: 50}, this.scene);
+                const groundMaterial = new BABYLON.PBRMaterial("groundMaterial", this.scene);
+                groundMaterial.baseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+                ground.material = groundMaterial;
+                ground.receiveShadows = true;
+
+                this.car = carBox;
+                this.garage = ground;
+            }
+
+            async setupXR() {
+                try {
+                    if (BABYLON.WebXRSessionManager.IsSessionSupportedAsync && navigator.xr) {
+                        const supported = await BABYLON.WebXRSessionManager.IsSessionSupportedAsync('immersive-ar');
+                        
+                        if (supported) {
+                            this.xrHelper = await this.scene.createDefaultXRExperienceAsync({
+                                floorMeshes: [],
+                                optionalFeatures: true,
+                                uiOptions: {
+                                    sessionMode: 'immersive-ar'
+                                }
+                            });
+
+                            if (this.xrHelper.baseExperience) {
+                                this.xrHelper.baseExperience.onStateChangedObservable.add((state) => {
+                                    if (state === BABYLON.WebXRState.IN_XR) {
+                                        this.enterARMode();
+                                    } else {
+                                        this.exitARMode();
+                                    }
+                                });
+                            }
+                        } else {
+                            this.arMainBtn.style.display = 'none';
+                            console.warn("AR not supported on this device");
+                        }
+                    } else {
+                        this.arMainBtn.style.display = 'none';
+                        console.warn("WebXR not available");
+                    }
+                } catch (error) {
+                    console.warn("XR not available:", error);
+                    this.arMainBtn.style.display = 'none';
+                }
+            }
+
+            enterARMode() {
+                this.isARMode = true;
+                
+                if (this.car) {
+                    const realWorldScale = 0.23;
+                    this.car.scaling = new BABYLON.Vector3(realWorldScale, realWorldScale, realWorldScale);
+                    this.car.position = new BABYLON.Vector3(0, 0, -2);
+                }
+                
+                if (this.garage) {
+                    this.garage.setEnabled(false);
+                }
+                
+                this.arStatus.classList.add('active');
+                this.arMainBtn.classList.add('active');
+                this.arMainBtn.innerHTML = '<div class="ar-icon">✓</div><div class="ar-text">EXIT</div>';
+                
+                console.log("AR mode activated - Vehicle in real scale");
+            }
+
+            exitARMode() {
+                this.isARMode = false;
+                
+                if (this.car) {
+                    this.car.scaling = new BABYLON.Vector3(5, 5, 5);
+                    this.car.position = new BABYLON.Vector3(-0.50, -0.76, -18.92);
+                }
+                
+                if (this.garage) {
+                    this.garage.setEnabled(true);
+                }
+                
+                this.arStatus.classList.remove('active');
+                this.arMainBtn.classList.remove('active');
+                this.arMainBtn.innerHTML = '<div class="ar-icon">📱</div><div class="ar-text">AR</div>';
+                
+                console.log("AR mode deactivated - Normal settings restored");
+            }
+
+            resetCamera() {
+                if (this.originalCameraPosition && this.camera) {
+                    this.camera.alpha = this.originalCameraPosition.alpha;
+                    this.camera.beta = this.originalCameraPosition.beta;
+                    this.camera.radius = this.originalCameraPosition.radius;
+                    this.camera.target = this.originalCameraPosition.target.clone();
+                }
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+
+            setupControls() {
+                // Main AR Button
+                this.arMainBtn.addEventListener('click', async () => {
+                    try {
+                        if (this.xrHelper && this.xrHelper.baseExperience) {
+                            if (this.isARMode) {
+                                await this.xrHelper.baseExperience.exitXRAsync();
+                            } else {
+                                await this.xrHelper.baseExperience.enterXRAsync('immersive-ar', 'local-floor');
+                            }
+                        } else {
+                            alert("Augmented Reality not available on this device/browser.\n\nCheck if:\n- Using HTTPS\n- Device supports AR\n- Browser is compatible (Chrome/Edge)");
+                        }
+                    } catch (error) {
+                        console.error("Error toggling AR:", error);
+                        alert("Error activating Augmented Reality:\n" + error.message + "\n\nTry using an AR-compatible device.");
+                    }
+                });
+
+                // Inspector Button
+                document.getElementById('inspectBtn').addEventListener('click', async () => {
+                    try {
+                        const btn = document.getElementById('inspectBtn');
+                        if (this.scene.debugLayer.isVisible()) {
+                            await this.scene.debugLayer.hide();
+                            btn.classList.remove('active');
+                        } else {
+                            await this.scene.debugLayer.show({
+                                embedMode: true,
+                                globalRoot: document.body,
+                                handleResize: true
+                            });
+                            btn.classList.add('active');
+                        }
+                    } catch (error) {
+                        console.error("Error toggling inspector:", error);
+                    }
+                });
+
+                // Reset Camera Button
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.resetCamera();
+                });
+
+                // Fullscreen Button
+                document.getElementById('fullscreenBtn').addEventListener('click', () => {
+                    this.toggleFullscreen();
+                });
+
+                // Responsive resizing
+                window.addEventListener("resize", () => {
+                    this.engine.resize();
+                });
+
+                // Prevent zoom on mobile devices
+                document.addEventListener('touchmove', (e) => {
+                    if (e.touches.length > 1) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            }
+
+            startRenderLoop() {
+                this.engine.runRenderLoop(() => {
+                    if (this.scene && this.scene.activeCamera) {
+                        this.scene.render();
+                    }
+                });
+            }
+
+            hideLoading() {
+                setTimeout(() => {
+                    this.loadingScreen.style.opacity = '0';
+                    this.loadingScreen.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => {
+                        this.loadingScreen.style.display = 'none';
+                    }, 500);
+                }, 1000);
+            }
+
+            showError(error) {
+                console.error("Application error:", error);
+                this.loadingScreen.innerHTML = `
+                    <div class="error-screen">
+                        <h2>Oops! Something went wrong</h2>
+                        <p>Could not load the 3D experience.</p>
+                        <p style="font-size: 14px; opacity: 0.8;">${error.message}</p>
+                        <button class="retry-btn" onclick="location.reload()">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', () => {
+            new FordVehicleConfigurator();
+        });
+
+        // Global error handling
+        window.addEventListener('error', (e) => {
+            console.error('Global error captured:', e.error);
+        });
+
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('Promise rejected:', e.reason);
+        });
+    </script>
+</body>
+</html>
