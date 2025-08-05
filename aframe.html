@@ -454,6 +454,8 @@
                 this.headlights = [];
                 this.isARMode = false;
                 this.originalCameraPosition = null;
+                this.originalEnvironmentTexture = null;
+                this.skybox = null;
                 
                 this.init();
             }
@@ -596,7 +598,8 @@
                         this.scene
                     );
                     this.scene.environmentTexture = envTexture;
-                    this.scene.createDefaultSkybox(envTexture, true, 1000);
+                    this.originalEnvironmentTexture = envTexture;
+                    this.skybox = this.scene.createDefaultSkybox(envTexture, true, 1000);
                     this.scene.environmentIntensity = 0.5;
 
                     const carResult = await BABYLON.SceneLoader.ImportMeshAsync(
@@ -813,6 +816,22 @@
                 }
             }
 
+            // Helper function to identify car parts
+            isCarMesh(mesh) {
+                // List of names that are car parts
+                const carPartNames = [
+                    'Plane.001', 'Plane.002', 'Plane.004', // Glass
+                    '#61457', '#65358', // Headlights
+                    'body', 'door', 'hood', 'trunk', 'wheel', 'tire', 
+                    'bumper', 'mirror', 'handle', 'light', 'chrome',
+                    'interior', 'seat', 'dashboard', 'campo'
+                ];
+                
+                return carPartNames.some(partName => 
+                    mesh.name.toLowerCase().includes(partName.toLowerCase())
+                ) || mesh.parent === this.car;
+            }
+
             enterARMode() {
                 this.isARMode = true;
                 
@@ -822,28 +841,87 @@
                     this.car.position = new BABYLON.Vector3(0, 0, -2);
                 }
                 
+                // Disable environment/garage
                 if (this.garage) {
                     this.garage.setEnabled(false);
+                }
+                
+                // Disable skybox in AR mode
+                if (this.skybox) {
+                    this.skybox.setEnabled(false);
+                }
+                
+                // Remove environment texture
+                this.scene.environmentTexture = null;
+                
+                // Disable fog in AR
+                this.scene.fogEnabled = false;
+                
+                // Reduce environment intensity for AR
+                this.scene.environmentIntensity = 0;
+                
+                // Ensure only the car and its parts are visible
+                this.scene.meshes.forEach(mesh => {
+                    if (mesh.name !== "__root__" && 
+                        mesh !== this.car && 
+                        !this.isCarMesh(mesh) &&
+                        !mesh.name.includes("skyBox")) {
+                        mesh.setEnabled(false);
+                    }
+                });
+                
+                // Make sure car and its children are enabled
+                if (this.car) {
+                    this.car.setEnabled(true);
+                    this.car.getChildMeshes().forEach(child => {
+                        child.setEnabled(true);
+                    });
                 }
                 
                 this.arStatus.classList.add('active');
                 this.arMainBtn.classList.add('active');
                 this.arMainBtn.innerHTML = '<div class="ar-icon">✓</div><div class="ar-text">EXIT</div>';
                 
-                console.log("AR mode activated - Vehicle in real scale");
+                console.log("AR mode activated - Only vehicle visible in real scale");
             }
 
             exitARMode() {
                 this.isARMode = false;
                 
                 if (this.car) {
-                    this.car.scaling = new BABYLON.Vector3(5, 5, 5);
-                    this.car.position = new BABYLON.Vector3(-0.50, -0.76, -18.92);
+                    this.car.scaling = new BABYLON.Vector3(10, 10, 10);
+                    this.car.position = new BABYLON.Vector3(-0.0, -0.76, -18.92);
                 }
                 
+                // Restore environment/garage
                 if (this.garage) {
                     this.garage.setEnabled(true);
                 }
+                
+                // Restore environment texture
+                if (this.originalEnvironmentTexture) {
+                    this.scene.environmentTexture = this.originalEnvironmentTexture;
+                }
+                
+                // Restore skybox
+                if (this.skybox) {
+                    this.skybox.setEnabled(true);
+                } else if (this.originalEnvironmentTexture) {
+                    this.skybox = this.scene.createDefaultSkybox(this.originalEnvironmentTexture, true, 1000);
+                }
+                
+                // Restore fog
+                this.scene.fogEnabled = true;
+                
+                // Restore environment intensity
+                this.scene.environmentIntensity = 0.5;
+                
+                // Re-enable all meshes
+                this.scene.meshes.forEach(mesh => {
+                    if (mesh.name !== "__root__") {
+                        mesh.setEnabled(true);
+                    }
+                });
                 
                 this.arStatus.classList.remove('active');
                 this.arMainBtn.classList.remove('active');
@@ -980,4 +1058,3 @@
     </script>
 </body>
 </html>
-
