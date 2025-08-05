@@ -249,28 +249,6 @@
             animation: slideDown 0.5s ease;
         }
 
-        .ar-instructions {
-            position: absolute;
-            top: 160px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 165, 0, 0.9);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 13px;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            display: none;
-            text-align: center;
-            max-width: 280px;
-        }
-
-        .ar-instructions.active {
-            display: block;
-            animation: slideDown 0.5s ease;
-        }
-
         @keyframes slideDown {
             from {
                 opacity: 0;
@@ -297,7 +275,7 @@
         /* Vehicle Dimensions Display */
         .vehicle-dimensions {
             position: absolute;
-            top: 220px;
+            top: 160px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.8);
@@ -379,31 +357,6 @@
             }
         }
 
-        @media (max-width: 480px) {
-            .ar-main-container {
-                bottom: 30px;
-            }
-
-            .ar-main-button {
-                width: 90px;
-                height: 90px;
-                font-size: 18px;
-            }
-
-            .tools-menu {
-                right: 15px;
-                flex-direction: row;
-                top: auto;
-                bottom: 160px;
-                transform: none;
-            }
-
-            .tool-button {
-                width: 40px;
-                height: 40px;
-            }
-        }
-
         .error-screen {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             text-align: center;
@@ -454,11 +407,6 @@
             <span>AR Mode Active - Real Scale 1:1</span>
         </div>
 
-        <!-- AR Instructions -->
-        <div class="ar-instructions" id="arInstructions">
-            👆 Tap on the floor to place the vehicle
-        </div>
-
         <!-- Vehicle Dimensions Display -->
         <div class="vehicle-dimensions" id="vehicleDimensions">
             <div>📏 <strong>Real Dimensions</strong></div>
@@ -506,7 +454,6 @@
                 this.canvas = document.getElementById("renderCanvas");
                 this.loadingScreen = document.getElementById("loadingScreen");
                 this.arStatus = document.getElementById("arStatus");
-                this.arInstructions = document.getElementById("arInstructions");
                 this.arMainBtn = document.getElementById("arMainBtn");
                 this.vehicleDimensions = document.getElementById("vehicleDimensions");
                 this.headlights = [];
@@ -514,8 +461,6 @@
                 this.originalCameraPosition = null;
                 this.originalEnvironmentTexture = null;
                 this.skybox = null;
-                this.carPlaced = false;
-                this.hitTestSource = null;
                 
                 // Real vehicle dimensions in meters
                 this.realDimensions = {
@@ -536,7 +481,6 @@
                     await this.setupCamera();
                     await this.setupLighting();
                     await this.loadAssets();
-                    await this.setupXR();
                     this.setupControls();
                     this.startRenderLoop();
                     this.hideLoading();
@@ -630,22 +574,19 @@
                     new BABYLON.Vector3(-0.5, -1, -0.5),
                     this.scene
                 );
-                directionalLight.intensity = 2.0; // Increased for more visible shadows
+                directionalLight.intensity = 2.0;
                 directionalLight.position = new BABYLON.Vector3(50, 50, 50);
                 directionalLight.diffuse = new BABYLON.Color3(1, 0.95, 0.8);
                 
-                // Optimized shadow configuration
                 directionalLight.shadowMinZ = 0.1;
                 directionalLight.shadowMaxZ = 200;
                 
-                // High-quality shadows
-                this.shadowGenerator = new BABYLON.ShadowGenerator(4096, directionalLight); // Increased resolution
+                this.shadowGenerator = new BABYLON.ShadowGenerator(4096, directionalLight);
                 this.shadowGenerator.useBlurExponentialShadowMap = true;
                 this.shadowGenerator.blurKernel = 32;
                 this.shadowGenerator.bias = 0.000001;
                 this.shadowGenerator.normalBias = 0.02;
 
-                // Fill light
                 const fillLight = new BABYLON.SpotLight(
                     "fillLight",
                     new BABYLON.Vector3(-20, 15, 10),
@@ -687,11 +628,9 @@
                     this.car.checkCollisions = true;
                     this.car.ellipsoid = new BABYLON.Vector3(2, 1, 4);
 
-                    // Add all car parts to cast shadows
                     carResult.meshes.forEach(mesh => {
                         if (mesh && mesh.name !== "__root__") {
                             this.shadowGenerator.addShadowCaster(mesh);
-                            console.log(`Shadow added for: ${mesh.name}`);
                         }
                     });
 
@@ -708,7 +647,6 @@
                     this.garage.receiveShadows = true;
                     this.garage.checkCollisions = true;
 
-                    // Ensure all ground parts receive shadows
                     garageResult.meshes.forEach(mesh => {
                         if (mesh && mesh.name !== "__root__") {
                             mesh.receiveShadows = true;
@@ -726,16 +664,13 @@
             }
 
             async enhanceMaterials() {
-                // Apply basic PBR materials for realism (without chrome effects)
                 this.scene.meshes.forEach(mesh => {
                     if (mesh.material && mesh.material.name) {
                         if (mesh.material.name.includes("car") || mesh.material.name.includes("vehicle")) {
-                            // Basic metallic material for the car
                             mesh.material.metallicFactor = 0.9;
                             mesh.material.roughnessFactor = 0.1;
                             mesh.material.baseColor = new BABYLON.Color3(0.2, 0.3, 0.8);
                         } else if (mesh.material.name.includes("road") || mesh.material.name.includes("ground")) {
-                            // Ground material
                             mesh.material.roughnessFactor = 0.8;
                             mesh.material.metallicFactor = 0.1;
                         }
@@ -743,49 +678,33 @@
                 });
             }
 
-            // Function for tinted glass (smoke effect)
             applyTintedGlassEffects() {
                 const glassNames = ["Plane.004", "Plane.002", "Plane.001"];
                 
                 glassNames.forEach(glassName => {
                     const glassMesh = this.scene.getMeshByName(glassName);
                     if (glassMesh) {
-                        // Create tinted/smoke glass material
                         const tintedGlassMaterial = new BABYLON.PBRMaterial(glassName + "_tinted_glass", this.scene);
                         
-                        // Darkened color for smoke effect
-                        tintedGlassMaterial.baseColor = new BABYLON.Color3(0.2, 0.25, 0.3); // Dark tone
+                        tintedGlassMaterial.baseColor = new BABYLON.Color3(0.2, 0.25, 0.3);
                         tintedGlassMaterial.metallicFactor = 0.1;
-                        tintedGlassMaterial.roughnessFactor = 0.05; // Slightly rough for realism
+                        tintedGlassMaterial.roughnessFactor = 0.05;
+                        tintedGlassMaterial.alpha = 0.3;
+                        tintedGlassMaterial.indexOfRefraction = 1.5;
+                        tintedGlassMaterial.transmissionFactor = 0.7;
+                        tintedGlassMaterial.thickness = 0.3;
                         
-                        // Transparency that allows seeing the interior
-                        tintedGlassMaterial.alpha = 0.3; // More opaque than normal glass, but still transparent
-                        
-                        // Refraction and transmission properties
-                        tintedGlassMaterial.indexOfRefraction = 1.5; // Automotive glass refraction index
-                        tintedGlassMaterial.transmissionFactor = 0.7; // Reduced transmission for smoke effect
-                        tintedGlassMaterial.thickness = 0.3; // Increased thickness
-                        
-                        // Subsurface configurations
                         tintedGlassMaterial.subSurface.isRefractionEnabled = true;
                         tintedGlassMaterial.subSurface.indexOfRefraction = 1.5;
                         tintedGlassMaterial.subSurface.thickness = 0.3;
                         tintedGlassMaterial.subSurface.tintColor = new BABYLON.Color3(0.15, 0.2, 0.25);
                         
-                        // Reflection to maintain environment reflections
                         tintedGlassMaterial.clearCoat.isEnabled = true;
-                        tintedGlassMaterial.clearCoat.intensity = 0.8; // Strong reflection
+                        tintedGlassMaterial.clearCoat.intensity = 0.8;
                         tintedGlassMaterial.clearCoat.roughness = 0.05;
-                        
-                        // Render both sides
                         tintedGlassMaterial.backFaceCulling = false;
                         
-                        // Apply the material
                         glassMesh.material = tintedGlassMaterial;
-                        
-                        console.log(`Tinted glass applied to: ${glassName}`);
-                    } else {
-                        console.warn(`Glass mesh not found: ${glassName}`);
                     }
                 });
             }
@@ -817,7 +736,6 @@
                         spotlight.intensity = 50;
                         spotlight.diffuse = new BABYLON.Color3(1, 1, 0.8);
                         spotlight.range = 100;
-                        
                         spotlight.parent = headlightMesh;
                         
                         this.headlights.push({
@@ -848,95 +766,57 @@
                 this.garage = ground;
             }
 
-            async setupXR() {
+            // Simplified AR entry function based on your example
+            async enterAR() {
                 try {
-                    if (BABYLON.WebXRSessionManager.IsSessionSupportedAsync && navigator.xr) {
-                        const supported = await BABYLON.WebXRSessionManager.IsSessionSupportedAsync('immersive-ar');
-                        
-                        if (supported) {
-                            this.xrHelper = await this.scene.createDefaultXRExperienceAsync({
-                                floorMeshes: [],
-                                optionalFeatures: ['hit-test'],
-                                uiOptions: {
-                                    sessionMode: 'immersive-ar'
-                                }
-                            });
-
-                            if (this.xrHelper.baseExperience) {
-                                this.xrHelper.baseExperience.onStateChangedObservable.add((state) => {
-                                    if (state === BABYLON.WebXRState.IN_XR) {
-                                        this.enterARMode();
-                                    } else {
-                                        this.exitARMode();
-                                    }
-                                });
-                            }
+                    const xr = await this.scene.createDefaultXRExperienceAsync({
+                        floorMeshes: [this.car]
+                    });
+                    
+                    this.xrHelper = xr;
+                    
+                    // Setup state change listener
+                    xr.baseExperience.onStateChangedObservable.add((state) => {
+                        if (state === BABYLON.WebXRState.IN_XR) {
+                            this.onAREnter();
                         } else {
-                            this.arMainBtn.style.display = 'none';
-                            console.warn("AR not supported on this device");
+                            this.onARExit();
                         }
-                    } else {
-                        this.arMainBtn.style.display = 'none';
-                        console.warn("WebXR not available");
-                    }
+                    });
+                    
+                    // Enter AR with local-floor reference
+                    await xr.baseExperience.enterXRAsync("immersive-ar", "local-floor");
+                    
                 } catch (error) {
-                    console.warn("XR not available:", error);
-                    this.arMainBtn.style.display = 'none';
+                    console.error("Error entering AR:", error);
+                    alert("AR not available: " + error.message);
                 }
             }
 
-            // Calculate real-world scale based on current model size vs real dimensions
-            calculateRealWorldScale() {
-                // Assuming the current model scale of 10 represents roughly the car size
-                // We need to find the right scale to achieve real-world dimensions
-                return 1.0; // 1:1 scale for real dimensions
-            }
-
-            // Helper function to identify car parts
-            isCarMesh(mesh) {
-                // List of names that are car parts
-                const carPartNames = [
-                    'Plane.001', 'Plane.002', 'Plane.004', // Glass
-                    '#61457', '#65358', // Headlights
-                    'body', 'door', 'hood', 'trunk', 'wheel', 'tire', 
-                    'bumper', 'mirror', 'handle', 'light', 'chrome',
-                    'interior', 'seat', 'dashboard', 'campo'
-                ];
-                
-                return carPartNames.some(partName => 
-                    mesh.name.toLowerCase().includes(partName.toLowerCase())
-                ) || mesh.parent === this.car;
-            }
-
-            async enterARMode() {
+            onAREnter() {
                 this.isARMode = true;
-                this.carPlaced = false;
                 
-                // Reset car visibility initially
+                // Apply real-world scale
                 if (this.car) {
-                    this.car.setEnabled(false);
+                    const realScale = 1.0; // Real dimensions scale
+                    this.car.scaling = new BABYLON.Vector3(realScale, realScale, realScale);
+                    this.car.position = new BABYLON.Vector3(0, 0, -2);
                 }
                 
-                // Disable environment/garage
+                // Hide environment for AR
                 if (this.garage) {
                     this.garage.setEnabled(false);
                 }
                 
-                // Disable skybox in AR mode
                 if (this.skybox) {
                     this.skybox.setEnabled(false);
                 }
                 
-                // Remove environment texture
                 this.scene.environmentTexture = null;
-                
-                // Disable fog in AR
                 this.scene.fogEnabled = false;
-                
-                // Reduce environment intensity for AR
                 this.scene.environmentIntensity = 0;
                 
-                // Ensure only the car and its parts are visible
+                // Hide non-car meshes
                 this.scene.meshes.forEach(mesh => {
                     if (mesh.name !== "__root__" && 
                         mesh !== this.car && 
@@ -946,117 +826,49 @@
                     }
                 });
                 
-                // Setup hit testing for placement
-                await this.setupHitTesting();
+                // Show car and its parts
+                if (this.car) {
+                    this.car.setEnabled(true);
+                    this.car.getChildMeshes().forEach(child => {
+                        child.setEnabled(true);
+                    });
+                }
                 
+                // Update UI
                 this.arStatus.classList.add('active');
-                this.arInstructions.classList.add('active');
                 this.vehicleDimensions.classList.add('active');
                 this.arMainBtn.classList.add('active');
                 this.arMainBtn.innerHTML = '<div class="ar-icon">✓</div><div class="ar-text">EXIT</div>';
                 
-                console.log("AR mode activated - Waiting for floor placement");
+                console.log("AR mode entered - Real scale applied");
             }
 
-            async setupHitTesting() {
-                if (this.xrHelper && this.xrHelper.baseExperience && this.xrHelper.featuresManager) {
-                    const hitTestFeature = this.xrHelper.featuresManager.getEnabledFeature(BABYLON.WebXRHitTest.Name);
-                    
-                    if (hitTestFeature) {
-                        // Create hit test source
-                        this.hitTestSource = await hitTestFeature.createHitTestSourceAsync({
-                            space: this.xrHelper.baseExperience.viewerReferenceSpace,
-                            offsetRay: { origin: { x: 0, y: 0, z: 0 }, direction: { x: 0, y: -1, z: 0 } }
-                        });
-
-                        // Setup touch/click handling for placement
-                        this.scene.onPointerObservable.add((pointerInfo) => {
-                            if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN && this.isARMode && !this.carPlaced) {
-                                this.placeCar(pointerInfo);
-                            }
-                        });
-
-                        console.log("Hit testing setup complete");
-                    }
-                }
-            }
-
-            async placeCar(pointerInfo) {
-                if (!this.hitTestSource || this.carPlaced) return;
-
-                try {
-                    const xrFrame = this.xrHelper.baseExperience.sessionManager.currentFrame;
-                    const hitTestResults = xrFrame.getHitTestResults(this.hitTestSource);
-
-                    if (hitTestResults.length > 0) {
-                        const hit = hitTestResults[0];
-                        const pose = hit.getPose(this.xrHelper.baseExperience.referenceSpace);
-
-                        if (pose && this.car) {
-                            // Convert WebXR pose to Babylon.js position
-                            const position = new BABYLON.Vector3(
-                                pose.transform.position.x,
-                                pose.transform.position.y,
-                                pose.transform.position.z
-                            );
-
-                            // Apply real-world scale and position
-                            const realWorldScale = this.calculateRealWorldScale();
-                            this.car.scaling = new BABYLON.Vector3(realWorldScale, realWorldScale, realWorldScale);
-                            this.car.position = position.clone();
-                            this.car.rotation = new BABYLON.Vector3(0, 0, 0);
-
-                            // Enable the car
-                            this.car.setEnabled(true);
-                            
-                            // Make sure all car parts are enabled
-                            this.car.getChildMeshes().forEach(child => {
-                                child.setEnabled(true);
-                            });
-
-                            this.carPlaced = true;
-                            this.arInstructions.classList.remove('active');
-
-                            console.log(`Car placed at: ${position.toString()}`);
-                            console.log(`Real dimensions: ${this.realDimensions.length}m × ${this.realDimensions.width}m × ${this.realDimensions.height}m`);
-                        }
-                    }
-                } catch (error) {
-                    console.error("Error placing car:", error);
-                }
-            }
-
-            exitARMode() {
+            onARExit() {
                 this.isARMode = false;
-                this.carPlaced = false;
                 
+                // Restore normal scale and position
                 if (this.car) {
                     this.car.scaling = new BABYLON.Vector3(10, 10, 10);
                     this.car.position = new BABYLON.Vector3(-0.0, -0.76, -18.92);
                     this.car.setEnabled(true);
                 }
                 
-                // Restore environment/garage
+                // Restore environment
                 if (this.garage) {
                     this.garage.setEnabled(true);
                 }
                 
-                // Restore environment texture
                 if (this.originalEnvironmentTexture) {
                     this.scene.environmentTexture = this.originalEnvironmentTexture;
                 }
                 
-                // Restore skybox
                 if (this.skybox) {
                     this.skybox.setEnabled(true);
                 } else if (this.originalEnvironmentTexture) {
                     this.skybox = this.scene.createDefaultSkybox(this.originalEnvironmentTexture, true, 1000);
                 }
                 
-                // Restore fog
                 this.scene.fogEnabled = true;
-                
-                // Restore environment intensity
                 this.scene.environmentIntensity = 0.5;
                 
                 // Re-enable all meshes
@@ -1065,19 +877,28 @@
                         mesh.setEnabled(true);
                     }
                 });
-
-                // Clean up hit test source
-                if (this.hitTestSource) {
-                    this.hitTestSource = null;
-                }
                 
+                // Update UI
                 this.arStatus.classList.remove('active');
-                this.arInstructions.classList.remove('active');
                 this.vehicleDimensions.classList.remove('active');
                 this.arMainBtn.classList.remove('active');
                 this.arMainBtn.innerHTML = '<div class="ar-icon">📱</div><div class="ar-text">AR</div>';
                 
-                console.log("AR mode deactivated - Normal settings restored");
+                console.log("AR mode exited - Normal view restored");
+            }
+
+            isCarMesh(mesh) {
+                const carPartNames = [
+                    'Plane.001', 'Plane.002', 'Plane.004',
+                    '#61457', '#65358',
+                    'body', 'door', 'hood', 'trunk', 'wheel', 'tire', 
+                    'bumper', 'mirror', 'handle', 'light', 'chrome',
+                    'interior', 'seat', 'dashboard', 'campo'
+                ];
+                
+                return carPartNames.some(partName => 
+                    mesh.name.toLowerCase().includes(partName.toLowerCase())
+                ) || mesh.parent === this.car;
             }
 
             resetCamera() {
@@ -1098,21 +919,14 @@
             }
 
             setupControls() {
-                // Main AR Button
+                // Main AR Button - using simplified approach
                 this.arMainBtn.addEventListener('click', async () => {
-                    try {
+                    if (!this.isARMode) {
+                        await this.enterAR();
+                    } else {
                         if (this.xrHelper && this.xrHelper.baseExperience) {
-                            if (this.isARMode) {
-                                await this.xrHelper.baseExperience.exitXRAsync();
-                            } else {
-                                await this.xrHelper.baseExperience.enterXRAsync('immersive-ar', 'local-floor');
-                            }
-                        } else {
-                            alert("Augmented Reality not available on this device/browser.\n\nCheck if:\n- Using HTTPS\n- Device supports AR\n- Browser is compatible (Chrome/Edge)");
+                            await this.xrHelper.baseExperience.exitXRAsync();
                         }
-                    } catch (error) {
-                        console.error("Error toggling AR:", error);
-                        alert("Error activating Augmented Reality:\n" + error.message + "\n\nTry using an AR-compatible device.");
                     }
                 });
 
@@ -1146,12 +960,10 @@
                     this.toggleFullscreen();
                 });
 
-                // Responsive resizing
                 window.addEventListener("resize", () => {
                     this.engine.resize();
                 });
 
-                // Prevent zoom on mobile devices
                 document.addEventListener('touchmove', (e) => {
                     if (e.touches.length > 1) {
                         e.preventDefault();
