@@ -249,6 +249,28 @@
             animation: slideDown 0.5s ease;
         }
 
+        .ar-instructions {
+            position: absolute;
+            top: 160px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 165, 0, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: none;
+            text-align: center;
+            max-width: 280px;
+        }
+
+        .ar-instructions.active {
+            display: block;
+            animation: slideDown 0.5s ease;
+        }
+
         @keyframes slideDown {
             from {
                 opacity: 0;
@@ -275,7 +297,7 @@
         /* Vehicle Dimensions Display */
         .vehicle-dimensions {
             position: absolute;
-            top: 150px;
+            top: 220px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.8);
@@ -432,6 +454,11 @@
             <span>AR Mode Active - Real Scale 1:1</span>
         </div>
 
+        <!-- AR Instructions -->
+        <div class="ar-instructions" id="arInstructions">
+            👆 Tap on the floor to place the vehicle
+        </div>
+
         <!-- Vehicle Dimensions Display -->
         <div class="vehicle-dimensions" id="vehicleDimensions">
             <div>📏 <strong>Real Dimensions</strong></div>
@@ -479,6 +506,7 @@
                 this.canvas = document.getElementById("renderCanvas");
                 this.loadingScreen = document.getElementById("loadingScreen");
                 this.arStatus = document.getElementById("arStatus");
+                this.arInstructions = document.getElementById("arInstructions");
                 this.arMainBtn = document.getElementById("arMainBtn");
                 this.vehicleDimensions = document.getElementById("vehicleDimensions");
                 this.headlights = [];
@@ -486,6 +514,8 @@
                 this.originalCameraPosition = null;
                 this.originalEnvironmentTexture = null;
                 this.skybox = null;
+                this.carPlaced = false;
+                this.hitTestSource = null;
                 
                 // Real vehicle dimensions in meters
                 this.realDimensions = {
@@ -826,7 +856,7 @@
                         if (supported) {
                             this.xrHelper = await this.scene.createDefaultXRExperienceAsync({
                                 floorMeshes: [],
-                                optionalFeatures: true,
+                                optionalFeatures: ['hit-test'],
                                 uiOptions: {
                                     sessionMode: 'immersive-ar'
                                 }
@@ -857,13 +887,9 @@
 
             // Calculate real-world scale based on current model size vs real dimensions
             calculateRealWorldScale() {
-                // This assumes the current model in the scene represents roughly 5.76m in length
-                // You may need to adjust this based on your actual model size
-                const currentModelScale = 10; // Current scaling factor
-                const modelUnitToMeterRatio = this.realDimensions.length / currentModelScale;
-                
-                // Calculate scale to achieve real-world dimensions
-                return 1 / modelUnitToMeterRatio;
+                // Assuming the current model scale of 10 represents roughly the car size
+                // We need to find the right scale to achieve real-world dimensions
+                return 1.0; // 1:1 scale for real dimensions
             }
 
             // Helper function to identify car parts
@@ -882,19 +908,13 @@
                 ) || mesh.parent === this.car;
             }
 
-            enterARMode() {
+            async enterARMode() {
                 this.isARMode = true;
+                this.carPlaced = false;
                 
+                // Reset car visibility initially
                 if (this.car) {
-                    // Calculate real-world scale using actual dimensions
-                    const realWorldScale = this.calculateRealWorldScale();
-                    
-                    // Apply real dimensions: Length: 5.762m, Width: 1.930m, Height: 2.023m
-                    this.car.scaling = new BABYLON.Vector3(realWorldScale, realWorldScale, realWorldScale);
-                    this.car.position = new BABYLON.Vector3(0, 0, -3); // Slightly further for better viewing
-                    
-                    console.log(`AR Scale applied: ${realWorldScale}`);
-                    console.log(`Real dimensions: ${this.realDimensions.length}m × ${this.realDimensions.width}m × ${this.realDimensions.height}m`);
+                    this.car.setEnabled(false);
                 }
                 
                 // Disable environment/garage
@@ -926,28 +946,94 @@
                     }
                 });
                 
-                // Make sure car and its children are enabled
-                if (this.car) {
-                    this.car.setEnabled(true);
-                    this.car.getChildMeshes().forEach(child => {
-                        child.setEnabled(true);
-                    });
-                }
+                // Setup hit testing for placement
+                await this.setupHitTesting();
                 
                 this.arStatus.classList.add('active');
+                this.arInstructions.classList.add('active');
                 this.vehicleDimensions.classList.add('active');
                 this.arMainBtn.classList.add('active');
                 this.arMainBtn.innerHTML = '<div class="ar-icon">✓</div><div class="ar-text">EXIT</div>';
                 
-                console.log("AR mode activated - Vehicle at real scale with precise dimensions");
+                console.log("AR mode activated - Waiting for floor placement");
+            }
+
+            async setupHitTesting() {
+                if (this.xrHelper && this.xrHelper.baseExperience && this.xrHelper.featuresManager) {
+                    const hitTestFeature = this.xrHelper.featuresManager.getEnabledFeature(BABYLON.WebXRHitTest.Name);
+                    
+                    if (hitTestFeature) {
+                        // Create hit test source
+                        this.hitTestSource = await hitTestFeature.createHitTestSourceAsync({
+                            space: this.xrHelper.baseExperience.viewerReferenceSpace,
+                            offsetRay: { origin: { x: 0, y: 0, z: 0 }, direction: { x: 0, y: -1, z: 0 } }
+                        });
+
+                        // Setup touch/click handling for placement
+                        this.scene.onPointerObservable.add((pointerInfo) => {
+                            if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN && this.isARMode && !this.carPlaced) {
+                                this.placeCar(pointerInfo);
+                            }
+                        });
+
+                        console.log("Hit testing setup complete");
+                    }
+                }
+            }
+
+            async placeCar(pointerInfo) {
+                if (!this.hitTestSource || this.carPlaced) return;
+
+                try {
+                    const xrFrame = this.xrHelper.baseExperience.sessionManager.currentFrame;
+                    const hitTestResults = xrFrame.getHitTestResults(this.hitTestSource);
+
+                    if (hitTestResults.length > 0) {
+                        const hit = hitTestResults[0];
+                        const pose = hit.getPose(this.xrHelper.baseExperience.referenceSpace);
+
+                        if (pose && this.car) {
+                            // Convert WebXR pose to Babylon.js position
+                            const position = new BABYLON.Vector3(
+                                pose.transform.position.x,
+                                pose.transform.position.y,
+                                pose.transform.position.z
+                            );
+
+                            // Apply real-world scale and position
+                            const realWorldScale = this.calculateRealWorldScale();
+                            this.car.scaling = new BABYLON.Vector3(realWorldScale, realWorldScale, realWorldScale);
+                            this.car.position = position.clone();
+                            this.car.rotation = new BABYLON.Vector3(0, 0, 0);
+
+                            // Enable the car
+                            this.car.setEnabled(true);
+                            
+                            // Make sure all car parts are enabled
+                            this.car.getChildMeshes().forEach(child => {
+                                child.setEnabled(true);
+                            });
+
+                            this.carPlaced = true;
+                            this.arInstructions.classList.remove('active');
+
+                            console.log(`Car placed at: ${position.toString()}`);
+                            console.log(`Real dimensions: ${this.realDimensions.length}m × ${this.realDimensions.width}m × ${this.realDimensions.height}m`);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error placing car:", error);
+                }
             }
 
             exitARMode() {
                 this.isARMode = false;
+                this.carPlaced = false;
                 
                 if (this.car) {
                     this.car.scaling = new BABYLON.Vector3(10, 10, 10);
                     this.car.position = new BABYLON.Vector3(-0.0, -0.76, -18.92);
+                    this.car.setEnabled(true);
                 }
                 
                 // Restore environment/garage
@@ -979,8 +1065,14 @@
                         mesh.setEnabled(true);
                     }
                 });
+
+                // Clean up hit test source
+                if (this.hitTestSource) {
+                    this.hitTestSource = null;
+                }
                 
                 this.arStatus.classList.remove('active');
+                this.arInstructions.classList.remove('active');
                 this.vehicleDimensions.classList.remove('active');
                 this.arMainBtn.classList.remove('active');
                 this.arMainBtn.innerHTML = '<div class="ar-icon">📱</div><div class="ar-text">AR</div>';
@@ -1116,4 +1208,3 @@
     </script>
 </body>
 </html>
-
