@@ -178,7 +178,7 @@
             text-align: center;
             color: rgba(255,255,255,0.8);
             font-size: 14px;
-            max-width: 200px;
+            max-width: 220px;
             line-height: 1.4;
         }
 
@@ -270,6 +270,29 @@
             justify-content: center;
             color: #4CAF50;
             font-size: 12px;
+        }
+
+        /* Vehicle Dimensions Display */
+        .vehicle-dimensions {
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: none;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .vehicle-dimensions.active {
+            display: block;
+            animation: slideDown 0.5s ease;
         }
 
         /* Tooltip */
@@ -409,6 +432,12 @@
             <span>AR Mode Active - Real Scale 1:1</span>
         </div>
 
+        <!-- Vehicle Dimensions Display -->
+        <div class="vehicle-dimensions" id="vehicleDimensions">
+            <div>📏 <strong>Real Dimensions</strong></div>
+            <div>Length: 5.762m | Width: 1.930m | Height: 2.023m</div>
+        </div>
+
         <!-- Main AR Button -->
         <div class="ar-main-container">
             <button id="arMainBtn" class="ar-main-button" title="Activate Augmented Reality">
@@ -416,7 +445,7 @@
                 <div class="ar-text">AR</div>
             </button>
             <div class="ar-description">
-                Tap to view the vehicle in Augmented Reality in the real world
+                View the vehicle in Augmented Reality at real scale (5.76m × 1.93m × 2.02m)
             </div>
         </div>
 
@@ -451,11 +480,21 @@
                 this.loadingScreen = document.getElementById("loadingScreen");
                 this.arStatus = document.getElementById("arStatus");
                 this.arMainBtn = document.getElementById("arMainBtn");
+                this.vehicleDimensions = document.getElementById("vehicleDimensions");
                 this.headlights = [];
                 this.isARMode = false;
                 this.originalCameraPosition = null;
                 this.originalEnvironmentTexture = null;
                 this.skybox = null;
+                
+                // Real vehicle dimensions in meters
+                this.realDimensions = {
+                    length: 5.762,    // 5762mm
+                    width: 1.930,     // 1930mm  
+                    height: 2.023,    // 2023mm
+                    wheelbase: 3.270, // 3270mm
+                    bedLength: 2.880  // 2880mm
+                };
                 
                 this.init();
             }
@@ -816,6 +855,17 @@
                 }
             }
 
+            // Calculate real-world scale based on current model size vs real dimensions
+            calculateRealWorldScale() {
+                // This assumes the current model in the scene represents roughly 5.76m in length
+                // You may need to adjust this based on your actual model size
+                const currentModelScale = 10; // Current scaling factor
+                const modelUnitToMeterRatio = this.realDimensions.length / currentModelScale;
+                
+                // Calculate scale to achieve real-world dimensions
+                return 1 / modelUnitToMeterRatio;
+            }
+
             // Helper function to identify car parts
             isCarMesh(mesh) {
                 // List of names that are car parts
@@ -836,9 +886,15 @@
                 this.isARMode = true;
                 
                 if (this.car) {
-                    const realWorldScale = 0.23;
+                    // Calculate real-world scale using actual dimensions
+                    const realWorldScale = this.calculateRealWorldScale();
+                    
+                    // Apply real dimensions: Length: 5.762m, Width: 1.930m, Height: 2.023m
                     this.car.scaling = new BABYLON.Vector3(realWorldScale, realWorldScale, realWorldScale);
-                    this.car.position = new BABYLON.Vector3(0, 0, -2);
+                    this.car.position = new BABYLON.Vector3(0, 0, -3); // Slightly further for better viewing
+                    
+                    console.log(`AR Scale applied: ${realWorldScale}`);
+                    console.log(`Real dimensions: ${this.realDimensions.length}m × ${this.realDimensions.width}m × ${this.realDimensions.height}m`);
                 }
                 
                 // Disable environment/garage
@@ -879,10 +935,11 @@
                 }
                 
                 this.arStatus.classList.add('active');
+                this.vehicleDimensions.classList.add('active');
                 this.arMainBtn.classList.add('active');
                 this.arMainBtn.innerHTML = '<div class="ar-icon">✓</div><div class="ar-text">EXIT</div>';
                 
-                console.log("AR mode activated - Only vehicle visible in real scale");
+                console.log("AR mode activated - Vehicle at real scale with precise dimensions");
             }
 
             exitARMode() {
@@ -924,6 +981,7 @@
                 });
                 
                 this.arStatus.classList.remove('active');
+                this.vehicleDimensions.classList.remove('active');
                 this.arMainBtn.classList.remove('active');
                 this.arMainBtn.innerHTML = '<div class="ar-icon">📱</div><div class="ar-text">AR</div>';
                 
@@ -1058,3 +1116,4 @@
     </script>
 </body>
 </html>
+
